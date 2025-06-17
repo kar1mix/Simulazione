@@ -71,18 +71,21 @@ export const updateEvento = async (
       res.status(404).json({ message: "Evento non trovato" });
       return;
     }
-    // Solo l'organizzatore che ha creato l'evento può modificarlo
-    if (evento.organizzatore.toString() !== req.user!.id) {
+    // Verifica che l'utente sia un organizzatore
+    if (req.user!.ruolo !== "organizzatore") {
       res
         .status(403)
-        .json({ message: "Non autorizzato a modificare questo evento" });
+        .json({
+          message: "Solo gli organizzatori possono modificare gli eventi",
+        });
       return;
     }
-    const { titolo, descrizione, data, luogo } = req.body;
+    const { titolo, descrizione, data, luogo, postiDisponibili } = req.body;
     evento.titolo = titolo ?? evento.titolo;
     evento.descrizione = descrizione ?? evento.descrizione;
     evento.data = data ?? evento.data;
     evento.luogo = luogo ?? evento.luogo;
+    evento.postiDisponibili = postiDisponibili ?? evento.postiDisponibili;
     await evento.save();
     res.json(evento);
   } catch (err) {
@@ -101,10 +104,13 @@ export const deleteEvento = async (
       res.status(404).json({ message: "Evento non trovato" });
       return;
     }
-    if (evento.organizzatore.toString() !== req.user!.id) {
+    // Verifica che l'utente sia un organizzatore
+    if (req.user!.ruolo !== "organizzatore") {
       res
         .status(403)
-        .json({ message: "Non autorizzato a eliminare questo evento" });
+        .json({
+          message: "Solo gli organizzatori possono eliminare gli eventi",
+        });
       return;
     }
     await evento.deleteOne();
