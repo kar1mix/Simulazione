@@ -38,6 +38,9 @@ export const iscrizione = async (
       checkIn: false,
     });
     await nuovaIscrizione.save();
+    // Incrementa numeroIscritti
+    evento.numeroIscritti = (evento.numeroIscritti || 0) + 1;
+    await evento.save();
     res.status(201).json(nuovaIscrizione);
   } catch (err) {
     res.status(500).json({ message: "Errore iscrizione", error: err });
@@ -60,11 +63,9 @@ export const disiscrizione = async (
     const domani = new Date();
     domani.setDate(domani.getDate() + 1);
     if (new Date(evento.data) < domani) {
-      res
-        .status(400)
-        .json({
-          message: "Non è possibile disiscriversi a meno di 24 ore dall'evento",
-        });
+      res.status(400).json({
+        message: "Non è possibile disiscriversi a meno di 24 ore dall'evento",
+      });
       return;
     }
     const iscrizione = await Iscrizione.findOne({
@@ -76,6 +77,9 @@ export const disiscrizione = async (
       return;
     }
     await iscrizione.deleteOne();
+    // Decrementa numeroIscritti
+    evento.numeroIscritti = Math.max((evento.numeroIscritti || 1) - 1, 0);
+    await evento.save();
     res.json({ message: "Disiscrizione effettuata" });
   } catch (err) {
     res.status(500).json({ message: "Errore disiscrizione", error: err });

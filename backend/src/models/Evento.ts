@@ -7,6 +7,7 @@ export interface IEvento extends Document {
   luogo: string;
   organizzatore: Types.ObjectId;
   iscritti: Types.ObjectId[];
+  numeroIscritti: number;
 }
 
 const EventoSchema = new Schema<IEvento>({
@@ -16,6 +17,7 @@ const EventoSchema = new Schema<IEvento>({
   luogo: { type: String, required: true },
   organizzatore: { type: Schema.Types.ObjectId, ref: "Utente", required: true },
   iscritti: [{ type: Schema.Types.ObjectId, ref: "Iscrizione" }],
+  numeroIscritti: { type: Number, default: 0 },
 });
 
 export default mongoose.model<IEvento>("Evento", EventoSchema);
