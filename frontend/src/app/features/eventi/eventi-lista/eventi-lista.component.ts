@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { EventiService, Evento } from '../../../core/services/eventi.service';
 import { IscrizioniService } from '../../../core/services/iscrizioni.service';
 import { LoadingService } from '../../../shared/services/loading.service';
@@ -85,17 +86,19 @@ import { AuthService } from '../../../core/services/auth.service';
             <ng-container *ngIf="!isOrganizzatore">
               <button
                 mat-raised-button
-                [color]="
-                  iscrizioniService.isIscritto(evento._id || '')
-                    ? 'warn'
-                    : 'primary'
-                "
+                [color]="isIscritto(evento._id || '') ? 'warn' : 'primary'"
                 (click)="gestisciIscrizione(evento._id || '')"
+                [disabled]="
+                  isIscritto(evento._id || '')
+                    ? !puoDisiscriversi(evento)
+                    : !puoIscriversi(evento)
+                "
               >
+                <mat-icon>{{
+                  isIscritto(evento._id || '') ? 'cancel' : 'how_to_reg'
+                }}</mat-icon>
                 {{
-                  iscrizioniService.isIscritto(evento._id || '')
-                    ? 'Disiscriviti'
-                    : 'Iscriviti'
+                  isIscritto(evento._id || '') ? 'Disiscriviti' : 'Iscriviti'
                 }}
               </button>
             </ng-container>
@@ -141,9 +144,10 @@ import { AuthService } from '../../../core/services/auth.service';
     `,
   ],
 })
-export class EventiListaComponent implements OnInit {
+export class EventiListaComponent implements OnInit, OnDestroy {
   eventi: Evento[] = [];
   isOrganizzatore = false;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private eventiService: EventiService,
@@ -157,49 +161,28 @@ export class EventiListaComponent implements OnInit {
 
   ngOnInit() {
     this.caricaEventi();
+    if (!this.isOrganizzatore) {
+      this.caricaIscrizioni();
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  isIscritto(eventoId: string): boolean {
+    return this.iscrizioniService.isIscritto(eventoId);
   }
 
   caricaEventi() {
     this.loadingService.show();
-    this.eventiService.getEventi().subscribe({
-      next: (eventi) => {
-        this.eventi = eventi;
-        this.loadingService.hide();
-      },
-      error: (error) => {
-        this.errorHandler.handleError(error);
-        this.loadingService.hide();
-      },
-    });
-  }
-
-  gestisciIscrizione(eventoId: string) {
-    if (!eventoId) return;
-
-    this.loadingService.show();
-    const request = this.iscrizioniService.isIscritto(eventoId)
-      ? this.iscrizioniService.disiscrivi(eventoId)
-      : this.iscrizioniService.iscrivi(eventoId);
-
-    request.subscribe({
-      next: () => {
-        this.loadingService.hide();
-      },
-      error: (error) => {
-        this.errorHandler.handleError(error);
-        this.loadingService.hide();
-      },
-    });
-  }
-
-  eliminaEvento(eventoId: string) {
-    if (!eventoId) return;
-
-    if (confirm('Sei sicuro di voler eliminare questo evento?')) {
-      this.loadingService.show();
-      this.eventiService.deleteEvento(eventoId).subscribe({
-        next: () => {
-          this.caricaEventi();
+    this.eventiService
+      .getEventi()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (eventi) => {
+          this.eventi = eventi;
           this.loadingService.hide();
         },
         error: (error) => {
@@ -207,6 +190,104 @@ export class EventiListaComponent implements OnInit {
           this.loadingService.hide();
         },
       });
+  }
+
+  caricaIscrizioni() {
+    this.loadingService.show();
+    this.iscrizioniService
+      .caricaIscrizioni()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadingService.hide();
+        },
+        error: (error) => {
+          this.errorHandler.handleError(error);
+          this.loadingService.hide();
+        },
+      });
+  }
+
+  gestisciIscrizione(eventoId: string) {
+    if (!eventoId) return;
+
+    const isIscritto = this.isIscritto(eventoId);
+    const evento = this.eventi.find((e) => e._id === eventoId);
+
+    if (!evento) {
+      this.errorHandler.handleError(new Error('Evento non trovato'));
+      return;
+    }
+
+    if (isIscritto && !this.puoDisiscriversi(evento)) {
+      this.errorHandler.handleError(
+        new Error('Non è possibile disiscriversi da questo evento')
+      );
+      return;
+    }
+
+    if (!isIscritto && !this.puoIscriversi(evento)) {
+      this.errorHandler.handleError(
+        new Error('Non è possibile iscriversi a questo evento')
+      );
+      return;
+    }
+
+    this.loadingService.show();
+    const request = isIscritto
+      ? this.iscrizioniService.disiscrivi(eventoId)
+      : this.iscrizioniService.iscrivi(eventoId);
+
+    request.pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.loadingService.hide();
+        this.caricaIscrizioni();
+      },
+      error: (error) => {
+        this.errorHandler.handleError(error);
+        this.loadingService.hide();
+      },
+    });
+  }
+
+  puoIscriversi(evento: Evento): boolean {
+    if (!evento?.data) return false;
+
+    const dataEvento = new Date(evento.data);
+    const oggi = new Date();
+    const domani = new Date(oggi);
+    domani.setDate(oggi.getDate() + 1);
+
+    return dataEvento > domani && evento.postiDisponibili > 0;
+  }
+
+  puoDisiscriversi(evento: Evento): boolean {
+    if (!evento?.data) return false;
+
+    const dataEvento = new Date(evento.data);
+    const oggi = new Date();
+
+    return dataEvento > oggi;
+  }
+
+  eliminaEvento(eventoId: string) {
+    if (!eventoId) return;
+
+    if (confirm('Sei sicuro di voler eliminare questo evento?')) {
+      this.loadingService.show();
+      this.eventiService
+        .deleteEvento(eventoId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.caricaEventi();
+            this.loadingService.hide();
+          },
+          error: (error) => {
+            this.errorHandler.handleError(error);
+            this.loadingService.hide();
+          },
+        });
     }
   }
 }

@@ -11,6 +11,7 @@ import {
   CheckInService,
   CheckIn,
 } from '../../../core/services/check-in.service';
+import { EventiService } from '../../../core/services/eventi.service';
 import { LoadingService } from '../../../shared/services/loading.service';
 import { ErrorHandlerService } from '../../../shared/services/error-handler.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -133,6 +134,7 @@ export class CheckInComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private checkInService: CheckInService,
+    private eventiService: EventiService,
     public loadingService: LoadingService,
     private errorHandler: ErrorHandlerService,
     private authService: AuthService,
@@ -142,8 +144,23 @@ export class CheckInComponent implements OnInit {
   ngOnInit() {
     const eventoId = this.route.snapshot.paramMap.get('id');
     if (eventoId) {
+      this.caricaDatiEvento(eventoId);
       this.caricaDatiCheckIn(eventoId);
     }
+  }
+
+  caricaDatiEvento(eventoId: string) {
+    this.loadingService.show();
+    this.eventiService.getEvento(eventoId).subscribe({
+      next: (evento) => {
+        this.evento = evento;
+        this.loadingService.hide();
+      },
+      error: (error) => {
+        this.errorHandler.handleError(error);
+        this.loadingService.hide();
+      },
+    });
   }
 
   caricaDatiCheckIn(eventoId: string) {

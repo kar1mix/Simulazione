@@ -180,9 +180,10 @@ export class EventiFormComponent implements OnInit {
       this.loadingService.show();
       this.eventiService.getEvento(this.eventoId).subscribe({
         next: (evento) => {
+          const dataEvento = new Date(evento.data);
           this.eventoForm.patchValue({
             ...evento,
-            data: new Date(evento.data),
+            data: dataEvento,
           });
           this.loadingService.hide();
         },
@@ -197,9 +198,10 @@ export class EventiFormComponent implements OnInit {
   onSubmit() {
     if (this.eventoForm.invalid) return;
 
+    const formValue = this.eventoForm.value;
     const eventoData: Evento = {
-      ...this.eventoForm.value,
-      data: this.eventoForm.value.data.toISOString(),
+      ...formValue,
+      data: formValue.data.toISOString(),
     };
 
     this.loadingService.show();
