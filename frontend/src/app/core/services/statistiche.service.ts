@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -25,7 +25,11 @@ export class StatisticheService {
 
   constructor(private http: HttpClient) {}
 
-  getStatistiche(): Observable<Statistiche> {
-    return this.http.get<Statistiche>(this.apiUrl);
+  getStatistiche(params: { dal: string; al: string }): Observable<Statistiche> {
+    const httpParams = new HttpParams()
+      .set('dal', params.dal)
+      .set('al', params.al);
+
+    return this.http.get<Statistiche>(this.apiUrl, { params: httpParams });
   }
 }
