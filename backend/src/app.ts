@@ -5,6 +5,9 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import utenteRoutes from "./routes/utenteRoutes";
+import eventoRoutes from "./routes/eventoRoutes";
+import iscrizioneRoutes from "./routes/iscrizioneRoutes";
+import statisticheRoutes from "./routes/statisticheRoutes";
 dotenv.config();
 
 const app = express();
@@ -49,3 +52,6 @@ app.use(
 );
 
 app.use("/api/utenti", utenteRoutes);
+app.use("/api/eventi", eventoRoutes);
+app.use("/api/iscrizioni", iscrizioneRoutes);
+app.use("/api/statistiche", statisticheRoutes);
