@@ -10,16 +10,16 @@ import { TournamentService } from '../../core/services/torneo.service';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="dashboard-container">
-      <div class="welcome-section">
-        <div class="welcome-header">
-          <h1>
-            Benvenuto, {{ currentUser?.nome }} {{ currentUser?.cognome }}!
-          </h1>
-          <button (click)="logout()" class="btn btn-logout">Logout</button>
-        </div>
-        <div class="user-status">
-          <p>Email: {{ currentUser?.email }}</p>
-          <p>Ruolo: {{ getUserRoleDisplay() }}</p>
+      <div class="dashboard-header">
+        <div class="user-info">
+          <div class="user-avatar">
+            <span class="avatar-icon">👤</span>
+          </div>
+          <div class="user-details">
+            <h1>{{ currentUser?.nome }} {{ currentUser?.cognome }}</h1>
+            <p class="user-email">{{ currentUser?.email }}</p>
+            <span class="role-badge">{{ getUserRoleDisplay() }}</span>
+          </div>
         </div>
       </div>
 
@@ -299,46 +299,55 @@ import { TournamentService } from '../../core/services/torneo.service';
         padding: 20px;
       }
 
-      .welcome-section {
+      .dashboard-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 30px;
-        border-radius: 10px;
+        border-radius: 15px;
         margin-bottom: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       }
 
-      .welcome-header {
+      .user-info {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        gap: 20px;
       }
 
-      .welcome-header h1 {
-        margin: 0;
-      }
-
-      .btn-logout {
+      .user-avatar {
+        width: 60px;
+        height: 60px;
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .avatar-icon {
+        font-size: 24px;
+      }
+
+      .user-details h1 {
+        margin: 0 0 5px 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .user-email {
+        margin: 0 0 10px 0;
+        opacity: 0.9;
+        font-size: 14px;
+      }
+
+      .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
         border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 8px 16px;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .btn-logout:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
-
-      .welcome-section h1 {
-        margin: 0 0 15px 0;
-        font-size: 2.5em;
-      }
-
-      .user-status {
-        font-size: 1.1em;
       }
 
       .access-section {

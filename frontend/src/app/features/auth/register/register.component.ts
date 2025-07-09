@@ -28,11 +28,15 @@ import { AuthService } from '../../../core/services/auth.service';
   ],
   template: `
     <div class="register-container">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Registrazione Torneo Ping-Pong</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
+      <div class="register-card">
+        <div class="register-header">
+          <div class="logo">
+            <span class="logo-icon">🏓</span>
+            <h1>Torneo Ping-Pong</h1>
+          </div>
+          <h2>Crea il tuo account</h2>
+        </div>
+        <div class="register-form">
           <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Nome</mat-label>
@@ -89,11 +93,14 @@ import { AuthService } from '../../../core/services/auth.service';
               Registrati
             </button>
           </form>
-        </mat-card-content>
-        <mat-card-actions>
-          <button mat-button (click)="goToLogin()">Torna al Login</button>
-        </mat-card-actions>
-      </mat-card>
+        </div>
+        <div class="register-footer">
+          <p>
+            Hai già un account?
+            <a (click)="goToLogin()" class="login-link">Accedi</a>
+          </p>
+        </div>
+      </div>
     </div>
   `,
   styles: [
@@ -103,22 +110,80 @@ import { AuthService } from '../../../core/services/auth.service';
         display: flex;
         justify-content: center;
         align-items: center;
-        background-color: #f5f5f5;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
       }
-      mat-card {
-        max-width: 400px;
+
+      .register-card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
         width: 100%;
-        margin: 2em;
-        padding: 2em;
+        max-width: 400px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
       }
+
+      .register-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .logo-icon {
+        font-size: 32px;
+      }
+
+      .logo h1 {
+        margin: 0;
+        color: #333;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .register-header h2 {
+        margin: 0;
+        color: #666;
+        font-size: 16px;
+        font-weight: 400;
+      }
+
+      .register-form {
+        margin-bottom: 20px;
+      }
+
       .full-width {
         width: 100%;
-        margin-bottom: 1em;
+        margin-bottom: 20px;
       }
-      mat-card-actions {
-        display: flex;
-        justify-content: center;
-        padding: 1em;
+
+      .register-footer {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+      }
+
+      .register-footer p {
+        margin: 0;
+        color: #666;
+      }
+
+      .login-link {
+        color: #1976d2;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .login-link:hover {
+        text-decoration: underline;
       }
     `,
   ],
