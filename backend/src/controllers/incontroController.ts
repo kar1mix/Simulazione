@@ -171,7 +171,7 @@ export const getIncontri = async (
  * @swagger
  * /api/torneo/incontri/{id}/risultato:
  *   put:
- *     summary: Registra il risultato di un incontro (solo organizzatori)
+ *     summary: Registra o modifica il risultato di un incontro (solo organizzatori)
  *     tags: [Torneo]
  *     security:
  *       - bearerAuth: []
@@ -197,7 +197,7 @@ export const getIncontri = async (
  *                 minimum: 0
  *     responses:
  *       200:
- *         description: Risultato registrato con successo
+ *         description: Risultato registrato/modificato con successo
  *         content:
  *           application/json:
  *             schema:
@@ -231,12 +231,7 @@ export const registraRisultato = async (
       return;
     }
 
-    if (incontro.stato === "completato") {
-      res.status(400).json({ message: "L'incontro è già stato completato" });
-      return;
-    }
-
-    // Aggiorna l'incontro con il risultato
+    // Aggiorna l'incontro con il risultato (permette anche la modifica di incontri completati)
     incontro.stato = "completato";
     incontro.risultato = {
       punteggioGiocatore1,

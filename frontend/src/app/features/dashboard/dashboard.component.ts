@@ -230,24 +230,38 @@ import { TournamentService } from '../../core/services/torneo.service';
                   </div>
 
                   <!-- Azioni per organizzatori -->
-                  <div
-                    *ngIf="
-                      isOrganizzatore() && incontro.stato === 'programmato'
-                    "
-                    class="incontro-actions"
-                  >
-                    <button
-                      (click)="registraRisultato(incontro._id)"
-                      class="btn btn-sm btn-success"
-                    >
-                      Registra Risultato
-                    </button>
-                    <button
-                      (click)="eliminaIncontro(incontro._id)"
-                      class="btn btn-sm btn-danger"
-                    >
-                      Elimina
-                    </button>
+                  <div *ngIf="isOrganizzatore()" class="incontro-actions">
+                    <!-- Azioni per incontri programmati -->
+                    <div *ngIf="incontro.stato === 'programmato'">
+                      <button
+                        (click)="registraRisultato(incontro._id)"
+                        class="btn btn-sm btn-success"
+                      >
+                        Registra Risultato
+                      </button>
+                      <button
+                        (click)="eliminaIncontro(incontro._id)"
+                        class="btn btn-sm btn-danger"
+                      >
+                        Elimina
+                      </button>
+                    </div>
+
+                    <!-- Azioni per incontri completati -->
+                    <div *ngIf="incontro.stato === 'completato'">
+                      <button
+                        (click)="modificaRisultato(incontro._id)"
+                        class="btn btn-sm btn-warning"
+                      >
+                        Modifica Risultato
+                      </button>
+                      <button
+                        (click)="eliminaIncontro(incontro._id)"
+                        class="btn btn-sm btn-danger"
+                      >
+                        Elimina
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -841,6 +855,52 @@ export class DashboardComponent implements OnInit {
         },
         error: (error) => {
           console.error("Errore nell'eliminazione incontro:", error);
+        },
+      });
+    }
+  }
+
+  modificaRisultato(incontroId: string): void {
+    const punteggio1 = prompt(
+      'Inserisci il nuovo punteggio del primo giocatore:'
+    );
+    const punteggio2 = prompt(
+      'Inserisci il nuovo punteggio del secondo giocatore:'
+    );
+
+    if (punteggio1 && punteggio2) {
+      const p1 = parseInt(punteggio1);
+      const p2 = parseInt(punteggio2);
+
+      if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0) {
+        alert('Inserisci punteggi validi (numeri positivi)');
+        return;
+      }
+
+      // Verifica regole ping-pong (vincitore deve avere almeno 11 punti e 2 punti di differenza)
+      const maxPunteggio = Math.max(p1, p2);
+      const minPunteggio = Math.min(p1, p2);
+
+      if (maxPunteggio < 11) {
+        alert('Il vincitore deve avere almeno 11 punti');
+        return;
+      }
+
+      if (maxPunteggio - minPunteggio < 2) {
+        alert('Il vincitore deve avere almeno 2 punti di differenza');
+        return;
+      }
+
+      this.tournamentService.registraRisultato(incontroId, p1, p2).subscribe({
+        next: (response) => {
+          console.log('Risultato modificato:', response);
+          alert('Risultato modificato con successo!');
+          this.loadIncontri();
+          this.loadClassifica(); // Ricarica anche la classifica
+        },
+        error: (error) => {
+          console.error('Errore nella modifica risultato:', error);
+          alert(error.error?.message || 'Errore nella modifica del risultato');
         },
       });
     }
