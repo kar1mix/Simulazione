@@ -4,24 +4,29 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import { specs } from "./config/swagger";
 import utenteRoutes from "./routes/utenteRoutes";
-import eventoRoutes from "./routes/eventoRoutes";
-import iscrizioneRoutes from "./routes/iscrizioneRoutes";
-import statisticheRoutes from "./routes/statisticheRoutes";
+import torneoRoutes from "./routes/torneoRoutes";
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/gestione-eventi";
+  process.env.MONGODB_URI || "mongodb://localhost:27017/torneo-ping-pong";
 
 // Middleware base
 app.use(cors());
 app.use(express.json());
 
+// Swagger documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+
 // Test route
 app.get("/", (_req, res) => {
-  res.send("API Gestione Eventi attiva!");
+  res.send(
+    "API Torneo Ping-Pong Aziendale attiva! <a href='/api-docs'>Documentazione API</a>"
+  );
 });
 
 // Connessione a MongoDB
@@ -31,6 +36,7 @@ mongoose
     console.log("Connesso a MongoDB");
     app.listen(PORT, () => {
       console.log(`Server avviato su http://localhost:${PORT}`);
+      console.log(`Documentazione API: http://localhost:${PORT}/api-docs`);
     });
   })
   .catch((err) => {
@@ -52,6 +58,4 @@ app.use(
 );
 
 app.use("/api/utenti", utenteRoutes);
-app.use("/api/eventi", eventoRoutes);
-app.use("/api/iscrizioni", iscrizioneRoutes);
-app.use("/api/statistiche", statisticheRoutes);
+app.use("/api/torneo", torneoRoutes);

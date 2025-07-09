@@ -2,13 +2,12 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import Utente from "./models/Utente";
-import Evento from "./models/Evento";
-import Iscrizione from "./models/Iscrizione";
+import Incontro from "./models/Incontro";
 
 dotenv.config();
 
 const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/gestione-eventi";
+  process.env.MONGODB_URI || "mongodb://localhost:27017/torneo-ping-pong";
 
 async function seed() {
   await mongoose.connect(MONGODB_URI);
@@ -16,114 +15,97 @@ async function seed() {
 
   // Svuota le collezioni
   await Utente.deleteMany({});
-  await Evento.deleteMany({});
-  await Iscrizione.deleteMany({});
+  await Incontro.deleteMany({});
 
   // Crea utenti
   const password = await bcrypt.hash("password123", 10);
-  const organizzatori = await Utente.insertMany([
+
+  const utenti = await Utente.insertMany([
     {
-      nome: "Luca Bianchi",
+      nome: "Luca",
+      cognome: "Bianchi",
       email: "luca@azienda.com",
       password,
-      ruolo: "organizzatore",
+      iscrittoAlTorneo: true,
+      organizzatoreDelTorneo: true,
     },
     {
-      nome: "Sara Verdi",
+      nome: "Sara",
+      cognome: "Verdi",
       email: "sara@azienda.com",
       password,
-      ruolo: "organizzatore",
+      iscrittoAlTorneo: true,
+      organizzatoreDelTorneo: true,
     },
-  ]);
-  const dipendenti = await Utente.insertMany([
     {
-      nome: "Mario Rossi",
+      nome: "Mario",
+      cognome: "Rossi",
       email: "mario@azienda.com",
       password,
-      ruolo: "dipendente",
+      iscrittoAlTorneo: true,
+      organizzatoreDelTorneo: false,
     },
     {
-      nome: "Giulia Neri",
+      nome: "Giulia",
+      cognome: "Neri",
       email: "giulia@azienda.com",
       password,
-      ruolo: "dipendente",
+      iscrittoAlTorneo: true,
+      organizzatoreDelTorneo: false,
     },
     {
-      nome: "Anna Blu",
+      nome: "Anna",
+      cognome: "Blu",
       email: "anna@azienda.com",
       password,
-      ruolo: "dipendente",
+      iscrittoAlTorneo: false,
+      organizzatoreDelTorneo: false,
     },
   ]);
 
-  // Crea eventi
+  // Crea alcuni incontri di esempio
   const oggi = new Date();
-  const evento1 = await Evento.create({
-    titolo: "Corso Sicurezza",
-    descrizione: "Formazione obbligatoria",
-    data: new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + 7, 9),
-    luogo: "Aula Magna",
-    organizzatore: organizzatori[0]._id,
-    iscritti: [],
-  });
-  const evento2 = await Evento.create({
-    titolo: "Team Building",
-    descrizione: "Attività di gruppo",
-    data: new Date(
-      oggi.getFullYear(),
-      oggi.getMonth(),
-      oggi.getDate() + 14,
-      14
-    ),
-    luogo: "Sala Conferenze",
-    organizzatore: organizzatori[1]._id,
-    iscritti: [],
-  });
-  const evento3 = await Evento.create({
-    titolo: "Corso Primo Soccorso",
-    descrizione: "Formazione passata",
-    data: new Date(
-      oggi.getFullYear(),
-      oggi.getMonth(),
-      oggi.getDate() - 10,
-      10
-    ),
-    luogo: "Aula 2",
-    organizzatore: organizzatori[0]._id,
-    iscritti: [],
-  });
-
-  // Crea iscrizioni
-  await Iscrizione.create([
+  await Incontro.create([
     {
-      utente: dipendenti[0]._id,
-      evento: evento1._id,
-      dataIscrizione: new Date(),
-      checkIn: false,
+      giocatore1: utenti[2]._id, // Mario
+      giocatore2: utenti[3]._id, // Giulia
+      dataIncontro: new Date(
+        oggi.getFullYear(),
+        oggi.getMonth(),
+        oggi.getDate() + 1,
+        14
+      ),
+      stato: "completato",
+      risultato: {
+        punteggioGiocatore1: 11,
+        punteggioGiocatore2: 8,
+      },
     },
     {
-      utente: dipendenti[1]._id,
-      evento: evento1._id,
-      dataIscrizione: new Date(),
-      checkIn: false,
+      giocatore1: utenti[0]._id, // Luca
+      giocatore2: utenti[2]._id, // Mario
+      dataIncontro: new Date(
+        oggi.getFullYear(),
+        oggi.getMonth(),
+        oggi.getDate() + 2,
+        15
+      ),
+      stato: "completato",
+      risultato: {
+        punteggioGiocatore1: 13,
+        punteggioGiocatore2: 11,
+      },
     },
     {
-      utente: dipendenti[2]._id,
-      evento: evento2._id,
-      dataIscrizione: new Date(),
-      checkIn: false,
-    },
-    {
-      utente: dipendenti[0]._id,
-      evento: evento3._id,
-      dataIscrizione: new Date(),
-      checkIn: true,
-    },
-    {
-      utente: dipendenti[1]._id,
-      evento: evento3._id,
-      dataIscrizione: new Date(),
-      checkIn: false,
+      giocatore1: utenti[1]._id, // Sara
+      giocatore2: utenti[3]._id, // Giulia
+      dataIncontro: new Date(
+        oggi.getFullYear(),
+        oggi.getMonth(),
+        oggi.getDate() + 3,
+        16
+      ),
+      stato: "programmato",
     },
   ]);
 
@@ -131,9 +113,10 @@ async function seed() {
   console.log("Credenziali organizzatori:");
   console.log("  luca@azienda.com / password123");
   console.log("  sara@azienda.com / password123");
-  console.log("Credenziali dipendenti:");
+  console.log("Credenziali partecipanti:");
   console.log("  mario@azienda.com / password123");
   console.log("  giulia@azienda.com / password123");
+  console.log("Utente non iscritto:");
   console.log("  anna@azienda.com / password123");
 
   await mongoose.disconnect();

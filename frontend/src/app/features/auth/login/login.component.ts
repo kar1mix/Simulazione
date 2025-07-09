@@ -30,7 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
     <div class="login-container">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Login</mat-card-title>
+          <mat-card-title>Login Torneo Ping-Pong</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
@@ -119,10 +119,9 @@ export class LoginComponent {
   onSubmit() {
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
-      this.authService.login(email, password).subscribe({
+      this.authService.login({ email, password }).subscribe({
         next: (response) => {
-          const role = response.ruolo;
-          this.router.navigate([`/dashboard/${role}`]);
+          this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           this.snackBar.open(error.error.message || 'Login fallito', 'Chiudi', {

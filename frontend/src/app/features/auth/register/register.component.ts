@@ -12,7 +12,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -25,14 +24,13 @@ import { AuthService } from '../../../core/services/auth.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSelectModule,
     MatSnackBarModule,
   ],
   template: `
     <div class="register-container">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Registrazione</mat-card-title>
+          <mat-card-title>Registrazione Torneo Ping-Pong</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
@@ -41,6 +39,15 @@ import { AuthService } from '../../../core/services/auth.service';
               <input matInput formControlName="nome" required />
               <mat-error *ngIf="registerForm.get('nome')?.hasError('required')"
                 >Nome è obbligatorio</mat-error
+              >
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Cognome</mat-label>
+              <input matInput formControlName="cognome" required />
+              <mat-error
+                *ngIf="registerForm.get('cognome')?.hasError('required')"
+                >Cognome è obbligatorio</mat-error
               >
             </mat-form-field>
 
@@ -70,17 +77,6 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-error
                 *ngIf="registerForm.get('password')?.hasError('minlength')"
                 >Password troppo corta (min 6 caratteri)</mat-error
-              >
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Ruolo</mat-label>
-              <mat-select formControlName="ruolo" required>
-                <mat-option value="dipendente">Dipendente</mat-option>
-                <mat-option value="organizzatore">Organizzatore</mat-option>
-              </mat-select>
-              <mat-error *ngIf="registerForm.get('ruolo')?.hasError('required')"
-                >Ruolo è obbligatorio</mat-error
               >
             </mat-form-field>
 
@@ -138,19 +134,18 @@ export class RegisterComponent {
   ) {
     this.registerForm = this.fb.group({
       nome: ['', Validators.required],
+      cognome: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      ruolo: ['', Validators.required],
     });
   }
 
   onSubmit() {
     if (this.registerForm.valid) {
-      const { nome, email, password, ruolo } = this.registerForm.value;
-      this.authService.register(nome, email, password, ruolo).subscribe({
+      const { nome, cognome, email, password } = this.registerForm.value;
+      this.authService.register({ nome, cognome, email, password }).subscribe({
         next: (response) => {
-          const role = response.ruolo;
-          this.router.navigate([`/dashboard/${role}`]);
+          this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           this.snackBar.open(
