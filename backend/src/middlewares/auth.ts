@@ -8,8 +8,6 @@ export interface AuthRequest extends Request {
     userId: string;
     email: string;
     ruolo: string;
-    iscrittoAlTorneo?: boolean;
-    organizzatoreDelTorneo?: boolean;
   };
 }
 
@@ -29,8 +27,6 @@ export function auth(
       userId: string;
       email: string;
       ruolo: string;
-      iscrittoAlTorneo?: boolean;
-      organizzatoreDelTorneo?: boolean;
     };
     req.user = decoded;
     next();

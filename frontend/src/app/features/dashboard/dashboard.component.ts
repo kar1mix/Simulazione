@@ -5,8 +5,9 @@ import { AuthService, User } from '../../core/services/auth.service';
 import {
   RichiestaAcquistoService,
   RichiestaAcquisto,
-  CategoriaAcquisto,
-} from '../../core/services/torneo.service';
+} from '../../core/services/richiesta.service';
+import { CategoriaAcquisto } from '../../core/services/categoria.service';
+import { CategoriaAcquistoService } from '../../core/services/categoria.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -447,53 +448,6 @@ import {
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       }
 
-      .incontro-card {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 20px;
-        background: white;
-      }
-
-      .incontro-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-      }
-
-      .incontro-header h5 {
-        margin: 0;
-        color: #333;
-      }
-
-      .status {
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8em;
-        font-weight: 500;
-      }
-
-      .status.programmato {
-        background: #ffc107;
-        color: #212529;
-      }
-
-      .status.completato {
-        background: #28a745;
-        color: white;
-      }
-
-      .incontro-details p {
-        margin: 5px 0;
-        color: #6c757d;
-      }
-
-      .incontro-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-      }
-
       .classifica-table table {
         width: 100%;
         border-collapse: collapse;
@@ -587,7 +541,8 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private richiestaService: RichiestaAcquistoService
+    private richiestaService: RichiestaAcquistoService,
+    private categoriaService: CategoriaAcquistoService
   ) {}
 
   ngOnInit(): void {
@@ -643,10 +598,17 @@ export class DashboardComponent implements OnInit {
   }
 
   modificaRichiesta(r: RichiestaAcquisto) {
+    if (!r._id) return;
     const nuovoOggetto = prompt('Modifica oggetto:', r.oggetto);
     if (nuovoOggetto !== null) {
       this.richiestaService
-        .aggiornaRichiesta(r._id, { oggetto: nuovoOggetto })
+        .aggiornaRichiesta(r._id, {
+          categoriaID: r.categoriaID,
+          oggetto: nuovoOggetto,
+          quantita: r.quantita,
+          costoUnitario: r.costoUnitario,
+          motivazione: r.motivazione,
+        })
         .subscribe({
           next: () => this.loadRichiesteDipendente(),
           error: (err) =>
@@ -655,7 +617,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  eliminaRichiesta(id: string) {
+  eliminaRichiesta(id?: string) {
+    if (!id) return;
     if (confirm('Sei sicuro di voler eliminare questa richiesta?')) {
       this.richiestaService.eliminaRichiesta(id).subscribe({
         next: () => this.loadRichiesteDipendente(),
@@ -675,7 +638,8 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  approvaRichiesta(id: string) {
+  approvaRichiesta(id?: string) {
+    if (!id) return;
     if (confirm('Approvare questa richiesta?')) {
       this.richiestaService.approvaRichiesta(id).subscribe({
         next: () => this.loadRichiesteDaApprovare(),
@@ -685,7 +649,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  rifiutaRichiesta(id: string) {
+  rifiutaRichiesta(id?: string) {
+    if (!id) return;
     if (confirm('Rifiutare questa richiesta?')) {
       this.richiestaService.rifiutaRichiesta(id).subscribe({
         next: () => this.loadRichiesteDaApprovare(),
@@ -696,7 +661,7 @@ export class DashboardComponent implements OnInit {
 
   // --- Categorie ---
   loadCategorie() {
-    this.richiestaService.getCategorie().subscribe({
+    this.categoriaService.getCategorie().subscribe({
       next: (data) => {
         this.categorie = data;
       },
@@ -706,23 +671,27 @@ export class DashboardComponent implements OnInit {
 
   aggiungiCategoria() {
     if (!this.nuovaCategoria) return;
-    this.richiestaService.creaCategoria(this.nuovaCategoria).subscribe({
-      next: () => {
-        this.nuovaCategoria = '';
-        this.loadCategorie();
-      },
-      error: (err) => alert(err.error?.message || 'Errore aggiunta categoria'),
-    });
+    this.categoriaService
+      .creaCategoria({ descrizione: this.nuovaCategoria })
+      .subscribe({
+        next: () => {
+          this.nuovaCategoria = '';
+          this.loadCategorie();
+        },
+        error: (err) =>
+          alert(err.error?.message || 'Errore aggiunta categoria'),
+      });
   }
 
   modificaCategoria(cat: CategoriaAcquisto) {
+    if (!cat._id) return;
     const nuovaDescrizione = prompt(
       'Modifica descrizione categoria:',
       cat.descrizione
     );
     if (nuovaDescrizione !== null && nuovaDescrizione.trim() !== '') {
-      this.richiestaService
-        .aggiornaCategoria(cat._id, nuovaDescrizione)
+      this.categoriaService
+        .aggiornaCategoria(cat._id, { descrizione: nuovaDescrizione })
         .subscribe({
           next: () => this.loadCategorie(),
           error: (err) =>
@@ -731,9 +700,10 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  eliminaCategoria(id: string) {
+  eliminaCategoria(id?: string) {
+    if (!id) return;
     if (confirm('Eliminare questa categoria?')) {
-      this.richiestaService.eliminaCategoria(id).subscribe({
+      this.categoriaService.eliminaCategoria(id).subscribe({
         next: () => this.loadCategorie(),
         error: (err) =>
           alert(err.error?.message || 'Errore eliminazione categoria'),

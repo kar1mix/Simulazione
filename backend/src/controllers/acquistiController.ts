@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import RichiestaAcquisto from "../models/Incontro";
+import RichiestaAcquisto from "../models/RichiestaAcquisto";
 import CategoriaAcquisto from "../models/CategoriaAcquisto";
 import Utente from "../models/Utente";
 
@@ -119,12 +119,10 @@ export const eliminaRichiesta = async (req: Request, res: Response) => {
     if (!richiesta)
       return res.status(404).json({ message: "Richiesta non trovata" });
     if (richiesta.stato !== "In attesa" && req.user.ruolo !== "Responsabile") {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Solo i responsabili possono eliminare richieste approvate o rifiutate",
-        });
+      return res.status(403).json({
+        message:
+          "Solo i responsabili possono eliminare richieste approvate o rifiutate",
+      });
     }
     if (
       req.user.ruolo !== "Responsabile" &&
@@ -143,12 +141,9 @@ export const eliminaRichiesta = async (req: Request, res: Response) => {
 export const getRichiesteDaApprovare = async (req: Request, res: Response) => {
   try {
     if (req.user.ruolo !== "Responsabile")
-      return res
-        .status(403)
-        .json({
-          message:
-            "Solo i responsabili possono vedere le richieste da approvare",
-        });
+      return res.status(403).json({
+        message: "Solo i responsabili possono vedere le richieste da approvare",
+      });
     const richieste = await RichiestaAcquisto.find({ stato: "In attesa" })
       .populate("categoriaID")
       .populate("utenteID");
@@ -197,6 +192,57 @@ export const rifiutaRichiesta = async (req: Request, res: Response) => {
     richiesta.utenteApprovazioneID = req.user.userId;
     await richiesta.save();
     res.json(richiesta);
+  } catch (error) {
+    res.status(500).json({ message: "Errore interno del server" });
+  }
+};
+
+// --- CATEGORIE DI ACQUISTO ---
+
+export const getCategorie = async (req: Request, res: Response) => {
+  try {
+    const categorie = await CategoriaAcquisto.find();
+    res.json(categorie);
+  } catch (error) {
+    res.status(500).json({ message: "Errore interno del server" });
+  }
+};
+
+export const creaCategoria = async (req: Request, res: Response) => {
+  try {
+    const { descrizione } = req.body;
+    if (!descrizione)
+      return res.status(400).json({ message: "Descrizione obbligatoria" });
+    const categoria = new CategoriaAcquisto({ descrizione });
+    await categoria.save();
+    res.status(201).json(categoria);
+  } catch (error) {
+    res.status(500).json({ message: "Errore interno del server" });
+  }
+};
+
+export const aggiornaCategoria = async (req: Request, res: Response) => {
+  try {
+    const { descrizione } = req.body;
+    const categoria = await CategoriaAcquisto.findByIdAndUpdate(
+      req.params.id,
+      { descrizione },
+      { new: true }
+    );
+    if (!categoria)
+      return res.status(404).json({ message: "Categoria non trovata" });
+    res.json(categoria);
+  } catch (error) {
+    res.status(500).json({ message: "Errore interno del server" });
+  }
+};
+
+export const eliminaCategoria = async (req: Request, res: Response) => {
+  try {
+    const categoria = await CategoriaAcquisto.findByIdAndDelete(req.params.id);
+    if (!categoria)
+      return res.status(404).json({ message: "Categoria non trovata" });
+    res.json({ message: "Categoria eliminata" });
   } catch (error) {
     res.status(500).json({ message: "Errore interno del server" });
   }

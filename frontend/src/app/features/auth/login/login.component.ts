@@ -32,7 +32,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <div class="login-header">
           <div class="logo">
             <span class="logo-icon">🏓</span>
-            <h1>Torneo Ping-Pong</h1>
+            <h1>Approvazione Richieste di Acquisto</h1>
           </div>
           <h2>Accedi al tuo account</h2>
         </div>

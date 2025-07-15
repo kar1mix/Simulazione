@@ -9,13 +9,11 @@ import {
   getRichiesteDaApprovare,
   approvaRichiesta,
   rifiutaRichiesta,
-} from "../controllers/torneoController";
-import {
   getCategorie,
   creaCategoria,
   aggiornaCategoria,
   eliminaCategoria,
-} from "../controllers/incontroController";
+} from "../controllers/acquistiController";
 
 const router = express.Router();
 

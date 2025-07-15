@@ -1,29 +1,27 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IRichiestaAcquisto extends Document {
-  richiestaID: Types.ObjectId;
-  dataRichiesta: Date;
-  categoriaID: Types.ObjectId;
+  categoriaID: mongoose.Types.ObjectId;
   oggetto: string;
   quantita: number;
   costoUnitario: number;
   motivazione: string;
   stato: "In attesa" | "Approvata" | "Rifiutata";
-  utenteID: Types.ObjectId;
+  utenteID: mongoose.Types.ObjectId;
+  dataRichiesta: Date;
   dataApprovazione?: Date;
-  utenteApprovazioneID?: Types.ObjectId;
+  utenteApprovazioneID?: mongoose.Types.ObjectId;
 }
 
 const RichiestaAcquistoSchema = new Schema<IRichiestaAcquisto>({
-  dataRichiesta: { type: Date, required: true, default: Date.now },
   categoriaID: {
     type: Schema.Types.ObjectId,
     ref: "CategoriaAcquisto",
     required: true,
   },
   oggetto: { type: String, required: true },
-  quantita: { type: Number, required: true, min: 1 },
-  costoUnitario: { type: Number, required: true, min: 0 },
+  quantita: { type: Number, required: true },
+  costoUnitario: { type: Number, required: true },
   motivazione: { type: String, required: true },
   stato: {
     type: String,
@@ -31,6 +29,7 @@ const RichiestaAcquistoSchema = new Schema<IRichiestaAcquisto>({
     default: "In attesa",
   },
   utenteID: { type: Schema.Types.ObjectId, ref: "Utente", required: true },
+  dataRichiesta: { type: Date, default: Date.now },
   dataApprovazione: { type: Date },
   utenteApprovazioneID: { type: Schema.Types.ObjectId, ref: "Utente" },
 });

@@ -4,12 +4,12 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Torneo Ping-Pong Aziendale API",
+      title: "Approvazione Richieste di Acquisto API",
       version: "1.0.0",
-      description: "API per la gestione di un torneo aziendale di ping-pong",
+      description: "API per la gestione delle richieste di acquisto aziendali.",
       contact: {
         name: "API Support",
-        email: "support@torneo-ping-pong.com",
+        email: "support@app-acquisti.com",
       },
     },
     servers: [
@@ -34,73 +34,33 @@ const options = {
             nome: { type: "string" },
             cognome: { type: "string" },
             email: { type: "string", format: "email" },
-            iscrittoAlTorneo: { type: "boolean" },
-            organizzatoreDelTorneo: { type: "boolean" },
+            ruolo: { type: "string", enum: ["Dipendente", "Responsabile"] },
           },
         },
-        Incontro: {
+        CategoriaAcquisto: {
           type: "object",
           properties: {
             _id: { type: "string" },
-            giocatore1: { $ref: "#/components/schemas/Utente" },
-            giocatore2: { $ref: "#/components/schemas/Utente" },
-            dataIncontro: { type: "string", format: "date-time" },
+            descrizione: { type: "string" },
+          },
+        },
+        RichiestaAcquisto: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            dataRichiesta: { type: "string", format: "date-time" },
+            categoriaID: { $ref: "#/components/schemas/CategoriaAcquisto" },
+            oggetto: { type: "string" },
+            quantita: { type: "number" },
+            costoUnitario: { type: "number" },
+            motivazione: { type: "string" },
             stato: {
               type: "string",
-              enum: ["programmato", "completato"],
+              enum: ["In attesa", "Approvata", "Rifiutata"],
             },
-            risultato: {
-              type: "object",
-              properties: {
-                punteggioGiocatore1: { type: "number", minimum: 0 },
-                punteggioGiocatore2: { type: "number", minimum: 0 },
-              },
-            },
-          },
-        },
-        ClassificaItem: {
-          type: "object",
-          properties: {
-            giocatore: { $ref: "#/components/schemas/Utente" },
-            partiteGiocate: { type: "number" },
-            vittorie: { type: "number" },
-            sconfitte: { type: "number" },
-            punti: { type: "number" },
-          },
-        },
-        LoginRequest: {
-          type: "object",
-          required: ["email", "password"],
-          properties: {
-            email: { type: "string", format: "email" },
-            password: { type: "string", minLength: 6 },
-          },
-        },
-        RegisterRequest: {
-          type: "object",
-          required: ["nome", "cognome", "email", "password"],
-          properties: {
-            nome: { type: "string" },
-            cognome: { type: "string" },
-            email: { type: "string", format: "email" },
-            password: { type: "string", minLength: 6 },
-          },
-        },
-        NuovoIncontro: {
-          type: "object",
-          required: ["giocatore1", "giocatore2", "dataIncontro"],
-          properties: {
-            giocatore1: { type: "string" },
-            giocatore2: { type: "string" },
-            dataIncontro: { type: "string", format: "date-time" },
-          },
-        },
-        RisultatoIncontro: {
-          type: "object",
-          required: ["punteggioGiocatore1", "punteggioGiocatore2"],
-          properties: {
-            punteggioGiocatore1: { type: "number", minimum: 0 },
-            punteggioGiocatore2: { type: "number", minimum: 0 },
+            utenteID: { type: "string" },
+            dataApprovazione: { type: "string", format: "date-time" },
+            utenteApprovazioneID: { type: "string" },
           },
         },
       },
