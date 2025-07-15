@@ -3,7 +3,28 @@ import RichiestaAcquisto from "../models/RichiestaAcquisto";
 import CategoriaAcquisto from "../models/CategoriaAcquisto";
 import Utente from "../models/Utente";
 
-// GET /api/richieste - Elenco richieste (dipendente: proprie; responsabile: tutte)
+/**
+ * @swagger
+ * /api/richieste:
+ *   get:
+ *     summary: Elenco richieste di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista delle richieste
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RichiestaAcquisto'
+ *       401:
+ *         description: Non autorizzato
+ *       500:
+ *         description: Errore interno del server
+ */
 export const getRichieste = async (req: Request, res: Response) => {
   try {
     const user = req.user;
@@ -25,7 +46,35 @@ export const getRichieste = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/richieste/:id - Dettaglio richiesta
+/**
+ * @swagger
+ * /api/richieste/{id}:
+ *   get:
+ *     summary: Dettaglio richiesta di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della richiesta
+ *     responses:
+ *       200:
+ *         description: Dettaglio richiesta
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RichiestaAcquisto'
+ *       401:
+ *         description: Non autorizzato
+ *       404:
+ *         description: Richiesta non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const getRichiestaById = async (req: Request, res: Response) => {
   try {
     const richiesta = await RichiestaAcquisto.findById(req.params.id)
@@ -46,7 +95,36 @@ export const getRichiestaById = async (req: Request, res: Response) => {
   }
 };
 
-// POST /api/richieste - Inserimento richiesta (solo dipendenti)
+/**
+ * @swagger
+ * /api/richieste:
+ *   post:
+ *     summary: Inserisce una nuova richiesta di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RichiestaAcquisto'
+ *     responses:
+ *       201:
+ *         description: Richiesta creata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RichiestaAcquisto'
+ *       400:
+ *         description: Dati mancanti
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Solo i dipendenti possono inserire richieste
+ *       500:
+ *         description: Errore interno del server
+ */
 export const creaRichiesta = async (req: Request, res: Response) => {
   try {
     if (req.user.ruolo !== "Dipendente")
@@ -82,7 +160,45 @@ export const creaRichiesta = async (req: Request, res: Response) => {
   }
 };
 
-// PUT /api/richieste/:id - Modifica richiesta (solo se propria e non approvata)
+/**
+ * @swagger
+ * /api/richieste/{id}:
+ *   put:
+ *     summary: Modifica una richiesta di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della richiesta
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RichiestaAcquisto'
+ *     responses:
+ *       200:
+ *         description: Richiesta aggiornata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RichiestaAcquisto'
+ *       400:
+ *         description: Richiesta già approvata o rifiutata
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Accesso negato
+ *       404:
+ *         description: Richiesta non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const aggiornaRichiesta = async (req: Request, res: Response) => {
   try {
     const richiesta = await RichiestaAcquisto.findById(req.params.id);
@@ -112,21 +228,43 @@ export const aggiornaRichiesta = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE /api/richieste/:id - Elimina richiesta (solo se propria e non approvata, o responsabile se approvata)
+/**
+ * @swagger
+ * /api/richieste/{id}:
+ *   delete:
+ *     summary: Elimina una richiesta di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della richiesta
+ *     responses:
+ *       200:
+ *         description: Richiesta eliminata
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Accesso negato
+ *       404:
+ *         description: Richiesta non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const eliminaRichiesta = async (req: Request, res: Response) => {
   try {
     const richiesta = await RichiestaAcquisto.findById(req.params.id);
     if (!richiesta)
       return res.status(404).json({ message: "Richiesta non trovata" });
-    if (richiesta.stato !== "In attesa" && req.user.ruolo !== "Responsabile") {
-      return res.status(403).json({
-        message:
-          "Solo i responsabili possono eliminare richieste approvate o rifiutate",
-      });
-    }
+    // Responsabile può sempre eliminare, dipendente solo se in attesa e propria
     if (
       req.user.ruolo !== "Responsabile" &&
-      richiesta.utenteID.toString() !== req.user.userId
+      (richiesta.stato !== "In attesa" ||
+        richiesta.utenteID.toString() !== req.user.userId)
     ) {
       return res.status(403).json({ message: "Accesso negato" });
     }
@@ -137,14 +275,38 @@ export const eliminaRichiesta = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/richieste/da-approvare - Elenco richieste in attesa (solo responsabili)
+/**
+ * @swagger
+ * /api/richieste/da-approvare:
+ *   get:
+ *     summary: Elenco richieste da approvare (solo responsabile)
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista delle richieste
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RichiestaAcquisto'
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Solo i responsabili possono vedere le richieste
+ *       500:
+ *         description: Errore interno del server
+ */
 export const getRichiesteDaApprovare = async (req: Request, res: Response) => {
   try {
     if (req.user.ruolo !== "Responsabile")
       return res.status(403).json({
-        message: "Solo i responsabili possono vedere le richieste da approvare",
+        message: "Solo i responsabili possono vedere le richieste",
       });
-    const richieste = await RichiestaAcquisto.find({ stato: "In attesa" })
+    // Mostra tutte le richieste, non solo quelle in attesa
+    const richieste = await RichiestaAcquisto.find()
       .populate("categoriaID")
       .populate("utenteID");
     res.json(richieste);
@@ -153,7 +315,39 @@ export const getRichiesteDaApprovare = async (req: Request, res: Response) => {
   }
 };
 
-// PUT /api/richieste/:id/approva - Approvazione richiesta (solo responsabili)
+/**
+ * @swagger
+ * /api/richieste/{id}/approva:
+ *   put:
+ *     summary: Approva una richiesta di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della richiesta
+ *     responses:
+ *       200:
+ *         description: Richiesta approvata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RichiestaAcquisto'
+ *       400:
+ *         description: Richiesta già gestita
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Solo i responsabili possono approvare richieste
+ *       404:
+ *         description: Richiesta non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const approvaRichiesta = async (req: Request, res: Response) => {
   try {
     if (req.user.ruolo !== "Responsabile")
@@ -175,7 +369,39 @@ export const approvaRichiesta = async (req: Request, res: Response) => {
   }
 };
 
-// PUT /api/richieste/:id/rifiuta - Rifiuto richiesta (solo responsabili)
+/**
+ * @swagger
+ * /api/richieste/{id}/rifiuta:
+ *   put:
+ *     summary: Rifiuta una richiesta di acquisto
+ *     tags: [Richieste]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della richiesta
+ *     responses:
+ *       200:
+ *         description: Richiesta rifiutata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RichiestaAcquisto'
+ *       400:
+ *         description: Richiesta già gestita
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Solo i responsabili possono rifiutare richieste
+ *       404:
+ *         description: Richiesta non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const rifiutaRichiesta = async (req: Request, res: Response) => {
   try {
     if (req.user.ruolo !== "Responsabile")
@@ -199,6 +425,28 @@ export const rifiutaRichiesta = async (req: Request, res: Response) => {
 
 // --- CATEGORIE DI ACQUISTO ---
 
+/**
+ * @swagger
+ * /api/categorie:
+ *   get:
+ *     summary: Elenco categorie di acquisto
+ *     tags: [Categorie]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista delle categorie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CategoriaAcquisto'
+ *       401:
+ *         description: Non autorizzato
+ *       500:
+ *         description: Errore interno del server
+ */
 export const getCategorie = async (req: Request, res: Response) => {
   try {
     const categorie = await CategoriaAcquisto.find();
@@ -208,6 +456,34 @@ export const getCategorie = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/categorie:
+ *   post:
+ *     summary: Crea una nuova categoria di acquisto
+ *     tags: [Categorie]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CategoriaAcquisto'
+ *     responses:
+ *       201:
+ *         description: Categoria creata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CategoriaAcquisto'
+ *       400:
+ *         description: Dati mancanti
+ *       401:
+ *         description: Non autorizzato
+ *       500:
+ *         description: Errore interno del server
+ */
 export const creaCategoria = async (req: Request, res: Response) => {
   try {
     const { descrizione } = req.body;
@@ -222,6 +498,41 @@ export const creaCategoria = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/categorie/{id}:
+ *   put:
+ *     summary: Modifica una categoria di acquisto
+ *     tags: [Categorie]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della categoria
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CategoriaAcquisto'
+ *     responses:
+ *       200:
+ *         description: Categoria aggiornata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CategoriaAcquisto'
+ *       401:
+ *         description: Non autorizzato
+ *       404:
+ *         description: Categoria non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const aggiornaCategoria = async (req: Request, res: Response) => {
   try {
     const { descrizione } = req.body;
@@ -238,6 +549,31 @@ export const aggiornaCategoria = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/categorie/{id}:
+ *   delete:
+ *     summary: Elimina una categoria di acquisto
+ *     tags: [Categorie]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID della categoria
+ *     responses:
+ *       200:
+ *         description: Categoria eliminata
+ *       401:
+ *         description: Non autorizzato
+ *       404:
+ *         description: Categoria non trovata
+ *       500:
+ *         description: Errore interno del server
+ */
 export const eliminaCategoria = async (req: Request, res: Response) => {
   try {
     const categoria = await CategoriaAcquisto.findByIdAndDelete(req.params.id);

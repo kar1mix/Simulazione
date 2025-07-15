@@ -8,7 +8,10 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <nav class="modern-navbar">
+    <nav
+      class="modern-navbar animate-fade-in"
+      aria-label="Barra di navigazione principale"
+    >
       <div class="navbar-container">
         <div class="navbar-brand">
           <span class="brand-icon">🛒</span>
@@ -202,6 +205,26 @@ import { AuthService } from '../../../core/services/auth.service';
         .nav-button {
           padding: 10px 15px;
         }
+      }
+
+      /* Animazione, focus, hover */
+      .animate-fade-in {
+        animation: fadeIn 0.7s;
+      }
+      .nav-link,
+      .nav-button {
+        transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+        outline: none;
+      }
+      .nav-link:focus,
+      .nav-button:focus {
+        box-shadow: 0 0 0 3px #b3c6ff;
+        border-color: #667eea;
+      }
+      .nav-link:hover,
+      .nav-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
       }
     `,
   ],

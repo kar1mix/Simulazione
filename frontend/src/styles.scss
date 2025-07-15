@@ -29,6 +29,34 @@ body {
   }
 }
 
+.info-snackbar {
+  background: linear-gradient(90deg, #2196f3 0%, #21cbf3 100%);
+  color: white;
+  .mat-simple-snackbar-action {
+    color: white;
+  }
+}
+
+.mat-mdc-snack-bar-container,
+.mat-snack-bar-container {
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(33, 203, 243, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-size: 1.1em;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+@keyframes popIn {
+  0% {
+    transform: scale(0.8) translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
 /* Stili globali per i pulsanti */
 .btn {
   padding: 10px 20px;
@@ -90,4 +118,53 @@ body {
 .btn-success:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 187, 106, 0.4);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.7s;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+.spinner {
+  border: 6px solid #eee;
+  border-top: 6px solid #667eea;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #667eea !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px #b3c6ff;
 }

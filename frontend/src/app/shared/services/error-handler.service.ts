@@ -24,4 +24,13 @@ export class ErrorHandlerService {
       panelClass: ['success-snackbar'],
     });
   }
+
+  showInfo(message: string) {
+    this.snackBar.open(message, 'OK', {
+      duration: 3000,
+      panelClass: ['info-snackbar'],
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+    });
+  }
 }

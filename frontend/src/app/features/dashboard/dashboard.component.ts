@@ -8,6 +8,7 @@ import {
 } from '../../core/services/richiesta.service';
 import { CategoriaAcquisto } from '../../core/services/categoria.service';
 import { CategoriaAcquistoService } from '../../core/services/categoria.service';
+import { ErrorHandlerService } from '../../shared/services/error-handler.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,7 +29,15 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
         </div>
       </div>
 
-      <div class="main-content">
+      <div class="main-content" [attr.aria-busy]="loading">
+        <div
+          *ngIf="loading"
+          class="spinner-overlay"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div class="spinner"></div>
+        </div>
         <!-- Dipendente: Form nuova richiesta e lista richieste personali -->
         <ng-container *ngIf="currentUser?.ruolo === 'Dipendente'">
           <div class="section">
@@ -46,12 +55,19 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                   [(ngModel)]="nuovaRichiesta.categoriaID"
                   required
                   class="form-control"
+                  #categoriaCtrl="ngModel"
                 >
                   <option value="">Seleziona categoria</option>
                   <option *ngFor="let cat of categorie" [value]="cat._id">
                     {{ cat.descrizione }}
                   </option>
                 </select>
+                <div
+                  class="invalid-feedback"
+                  *ngIf="categoriaCtrl.invalid && categoriaCtrl.touched"
+                >
+                  Seleziona una categoria.
+                </div>
               </div>
               <div class="form-group">
                 <label for="oggetto">Oggetto</label>
@@ -61,7 +77,14 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                   [(ngModel)]="nuovaRichiesta.oggetto"
                   required
                   class="form-control"
+                  #oggettoCtrl="ngModel"
                 />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="oggettoCtrl.invalid && oggettoCtrl.touched"
+                >
+                  Inserisci l'oggetto della richiesta.
+                </div>
               </div>
               <div class="form-group">
                 <label for="quantita">Quantità</label>
@@ -73,7 +96,14 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                   required
                   min="1"
                   class="form-control"
+                  #quantitaCtrl="ngModel"
                 />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="quantitaCtrl.invalid && quantitaCtrl.touched"
+                >
+                  Inserisci una quantità valida (minimo 1).
+                </div>
               </div>
               <div class="form-group">
                 <label for="costoUnitario">Costo Unitario</label>
@@ -85,7 +115,14 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                   required
                   min="0"
                   class="form-control"
+                  #costoCtrl="ngModel"
                 />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="costoCtrl.invalid && costoCtrl.touched"
+                >
+                  Inserisci un costo unitario valido (>= 0).
+                </div>
               </div>
               <div class="form-group">
                 <label for="motivazione">Motivazione</label>
@@ -95,9 +132,20 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                   [(ngModel)]="nuovaRichiesta.motivazione"
                   required
                   class="form-control"
+                  #motivazioneCtrl="ngModel"
                 />
+                <div
+                  class="invalid-feedback"
+                  *ngIf="motivazioneCtrl.invalid && motivazioneCtrl.touched"
+                >
+                  Inserisci la motivazione della richiesta.
+                </div>
               </div>
-              <button type="submit" class="btn btn-primary">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="!richiestaForm.form.valid"
+              >
                 Invia Richiesta
               </button>
             </form>
@@ -107,7 +155,10 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
             <div *ngIf="richieste.length === 0" class="no-data">
               Nessuna richiesta trovata.
             </div>
-            <table *ngIf="richieste.length > 0" class="request-table">
+            <table
+              *ngIf="richieste.length > 0"
+              class="request-table animate-fade-in modern-table"
+            >
               <thead>
                 <tr>
                   <th>Data</th>
@@ -121,7 +172,12 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let r of richieste">
+                <tr
+                  *ngFor="let r of richieste"
+                  [class.selected-row]="
+                    r._id === modificaRichiestaData._id && showModaleModifica
+                  "
+                >
                   <td>{{ r.dataRichiesta | date : 'short' }}</td>
                   <td>{{ r.categoriaID.descrizione }}</td>
                   <td>{{ r.oggetto }}</td>
@@ -130,110 +186,289 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
                   <td>{{ r.motivazione }}</td>
                   <td>{{ r.stato }}</td>
                   <td>
-                    <button
-                      *ngIf="r.stato === 'In attesa'"
-                      (click)="modificaRichiesta(r)"
-                      class="btn btn-sm btn-warning"
-                    >
-                      Modifica
-                    </button>
-                    <button
-                      *ngIf="r.stato === 'In attesa'"
-                      (click)="eliminaRichiesta(r._id)"
-                      class="btn btn-sm btn-danger"
-                    >
-                      Elimina
-                    </button>
+                    <div class="table-actions">
+                      <button
+                        *ngIf="r.stato === 'In attesa'"
+                        (click)="apriModaleModifica(r)"
+                        class="btn btn-sm btn-warning"
+                      >
+                        Modifica
+                      </button>
+                      <button
+                        *ngIf="r.stato === 'In attesa'"
+                        (click)="eliminaRichiesta(r._id)"
+                        class="btn btn-sm btn-danger"
+                      >
+                        Elimina
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+          <!-- MODALE MODIFICA RICHIESTA -->
+          <div
+            class="modal-overlay"
+            *ngIf="showModaleModifica"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Modifica richiesta"
+          >
+            <div class="modal-content animate-fade-in">
+              <h3>Modifica Richiesta</h3>
+              <form
+                (ngSubmit)="confermaModificaRichiesta()"
+                #modificaForm="ngForm"
+                class="request-form"
+              >
+                <div class="form-group">
+                  <label for="categoriaMod">Categoria</label>
+                  <select
+                    id="categoriaMod"
+                    name="categoriaMod"
+                    [(ngModel)]="modificaRichiestaData.categoriaID"
+                    required
+                    class="form-control"
+                    #categoriaModCtrl="ngModel"
+                  >
+                    <option value="">Seleziona categoria</option>
+                    <option *ngFor="let cat of categorie" [value]="cat._id">
+                      {{ cat.descrizione }}
+                    </option>
+                  </select>
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="categoriaModCtrl.invalid && categoriaModCtrl.touched"
+                  >
+                    Seleziona una categoria.
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="oggettoMod">Oggetto</label>
+                  <input
+                    id="oggettoMod"
+                    name="oggettoMod"
+                    [(ngModel)]="modificaRichiestaData.oggetto"
+                    required
+                    class="form-control"
+                    #oggettoModCtrl="ngModel"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="oggettoModCtrl.invalid && oggettoModCtrl.touched"
+                  >
+                    Inserisci l'oggetto della richiesta.
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="quantitaMod">Quantità</label>
+                  <input
+                    id="quantitaMod"
+                    name="quantitaMod"
+                    type="number"
+                    [(ngModel)]="modificaRichiestaData.quantita"
+                    required
+                    min="1"
+                    class="form-control"
+                    #quantitaModCtrl="ngModel"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="quantitaModCtrl.invalid && quantitaModCtrl.touched"
+                  >
+                    Inserisci una quantità valida (minimo 1).
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="costoUnitarioMod">Costo Unitario</label>
+                  <input
+                    id="costoUnitarioMod"
+                    name="costoUnitarioMod"
+                    type="number"
+                    [(ngModel)]="modificaRichiestaData.costoUnitario"
+                    required
+                    min="0"
+                    class="form-control"
+                    #costoUnitarioModCtrl="ngModel"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="
+                      costoUnitarioModCtrl.invalid &&
+                      costoUnitarioModCtrl.touched
+                    "
+                  >
+                    Inserisci un costo unitario valido (>= 0).
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="motivazioneMod">Motivazione</label>
+                  <input
+                    id="motivazioneMod"
+                    name="motivazioneMod"
+                    [(ngModel)]="modificaRichiestaData.motivazione"
+                    required
+                    class="form-control"
+                    #motivazioneModCtrl="ngModel"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="
+                      motivazioneModCtrl.invalid && motivazioneModCtrl.touched
+                    "
+                  >
+                    Inserisci la motivazione della richiesta.
+                  </div>
+                </div>
+                <div class="modal-actions">
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="!modificaForm.form.valid"
+                  >
+                    Salva
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    (click)="chiudiModaleModifica()"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <!-- FINE MODALE MODIFICA RICHIESTA -->
         </ng-container>
 
         <!-- Responsabile: Elenco richieste da approvare e gestione categorie -->
         <ng-container *ngIf="currentUser?.ruolo === 'Responsabile'">
           <div class="section">
-            <h2>Richieste da Approvare</h2>
+            <h2>Tutte le Richieste</h2>
             <div *ngIf="richiesteDaApprovare.length === 0" class="no-data">
-              Nessuna richiesta in attesa.
+              Nessuna richiesta trovata.
             </div>
-            <table
-              *ngIf="richiesteDaApprovare.length > 0"
-              class="request-table"
-            >
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Categoria</th>
-                  <th>Oggetto</th>
-                  <th>Quantità</th>
-                  <th>Costo Unitario</th>
-                  <th>Motivazione</th>
-                  <th>Richiedente</th>
-                  <th>Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let r of richiesteDaApprovare">
-                  <td>{{ r.dataRichiesta | date : 'short' }}</td>
-                  <td>{{ r.categoriaID.descrizione }}</td>
-                  <td>{{ r.oggetto }}</td>
-                  <td>{{ r.quantita }}</td>
-                  <td>{{ r.costoUnitario | currency : 'EUR' }}</td>
-                  <td>{{ r.motivazione }}</td>
-                  <td>{{ r.utenteID }}</td>
-                  <td>
-                    <button
-                      (click)="approvaRichiesta(r._id)"
-                      class="btn btn-sm btn-success"
-                    >
-                      Approva
-                    </button>
-                    <button
-                      (click)="rifiutaRichiesta(r._id)"
-                      class="btn btn-sm btn-danger"
-                    >
-                      Rifiuta
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="requests-grid">
+              <div
+                *ngFor="let r of richiesteDaApprovare"
+                class="request-card animate-fade-in"
+              >
+                <div class="request-header">
+                  <span class="request-date">{{
+                    r.dataRichiesta | date : 'short'
+                  }}</span>
+                  <span
+                    class="badge"
+                    [ngClass]="{
+                      'badge-attesa': r.stato === 'In attesa',
+                      'badge-approvata': r.stato === 'Approvata',
+                      'badge-rifiutata': r.stato === 'Rifiutata'
+                    }"
+                    >{{ r.stato }}</span
+                  >
+                </div>
+                <div class="request-body">
+                  <div>
+                    <strong>Categoria:</strong> {{ r.categoriaID.descrizione }}
+                  </div>
+                  <div><strong>Oggetto:</strong> {{ r.oggetto }}</div>
+                  <div><strong>Quantità:</strong> {{ r.quantita }}</div>
+                  <div>
+                    <strong>Costo Unitario:</strong>
+                    {{ r.costoUnitario | currency : 'EUR' }}
+                  </div>
+                  <div><strong>Motivazione:</strong> {{ r.motivazione }}</div>
+                  <div>
+                    <strong>Richiedente:</strong>
+                    {{ r.utenteID?.nome || r.utenteID }}
+                  </div>
+                </div>
+                <div class="request-actions">
+                  <button
+                    *ngIf="r.stato === 'In attesa'"
+                    (click)="approvaRichiesta(r._id)"
+                    class="btn btn-success animate-btn"
+                  >
+                    Approva
+                  </button>
+                  <button
+                    *ngIf="r.stato === 'In attesa'"
+                    (click)="rifiutaRichiesta(r._id)"
+                    class="btn btn-danger animate-btn"
+                  >
+                    Rifiuta
+                  </button>
+                  <button
+                    (click)="eliminaRichiesta(r._id)"
+                    class="btn btn-secondary animate-btn"
+                  >
+                    Elimina
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="section">
+          <div class="section categorie-section">
             <h2>Gestione Categorie</h2>
-            <form
-              (ngSubmit)="aggiungiCategoria()"
-              #categoriaForm="ngForm"
-              class="category-form"
-            >
-              <input
-                [(ngModel)]="nuovaCategoria"
-                name="nuovaCategoria"
-                required
-                placeholder="Nuova categoria"
-                class="form-control"
-              />
-              <button type="submit" class="btn btn-primary">Aggiungi</button>
-            </form>
-            <ul class="category-list">
-              <li *ngFor="let cat of categorie">
-                {{ cat.descrizione }}
+            <div class="category-form-card">
+              <form
+                (ngSubmit)="aggiungiCategoria()"
+                #categoriaForm="ngForm"
+                class="category-form"
+              >
+                <div class="form-group">
+                  <label for="nuovaCategoria">Nuova Categoria</label>
+                  <input
+                    id="nuovaCategoria"
+                    name="nuovaCategoria"
+                    [(ngModel)]="nuovaCategoria"
+                    required
+                    class="form-control"
+                    #nuovaCategoriaCtrl="ngModel"
+                  />
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="
+                      nuovaCategoriaCtrl.invalid && nuovaCategoriaCtrl.touched
+                    "
+                  >
+                    Inserisci una descrizione valida.
+                  </div>
+                </div>
                 <button
-                  (click)="modificaCategoria(cat)"
-                  class="btn btn-sm btn-warning"
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="!categoriaForm.form.valid"
                 >
-                  Modifica
+                  Aggiungi
                 </button>
-                <button
-                  (click)="eliminaCategoria(cat._id)"
-                  class="btn btn-sm btn-danger"
-                >
-                  Elimina
-                </button>
-              </li>
-            </ul>
+              </form>
+            </div>
+            <div class="category-grid">
+              <div
+                class="category-card animate-fade-in"
+                *ngFor="let cat of categorie"
+              >
+                <span class="category-label">{{ cat.descrizione }}</span>
+                <div class="category-actions">
+                  <button
+                    (click)="modificaCategoria(cat)"
+                    class="btn btn-sm btn-warning"
+                  >
+                    Modifica
+                  </button>
+                  <button
+                    (click)="eliminaCategoria(cat._id)"
+                    class="btn btn-sm btn-danger"
+                  >
+                    Elimina
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </ng-container>
       </div>
@@ -520,6 +755,273 @@ import { CategoriaAcquistoService } from '../../core/services/categoria.service'
         padding: 5px 10px;
         font-size: 0.9em;
       }
+      .requests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+        margin-top: 24px;
+      }
+      .request-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.08);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: box-shadow 0.3s, transform 0.3s;
+        animation: fadeIn 0.7s;
+      }
+      .request-card:hover {
+        box-shadow: 0 6px 24px rgba(102, 126, 234, 0.18);
+        transform: translateY(-4px) scale(1.02);
+      }
+      .request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .badge {
+        padding: 6px 16px;
+        border-radius: 12px;
+        font-size: 0.95em;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.5px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+      }
+      .badge-attesa {
+        background: #ffc107;
+        color: #212529;
+      }
+      .badge-approvata {
+        background: #28a745;
+      }
+      .badge-rifiutata {
+        background: #dc3545;
+      }
+      .request-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.7s;
+      }
+      .animate-btn {
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .animate-btn:hover {
+        transform: scale(1.07);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (max-width: 600px) {
+        .dashboard-header,
+        .section {
+          padding: 12px !important;
+        }
+        .requests-grid {
+          grid-template-columns: 1fr;
+        }
+        .request-card {
+          padding: 14px;
+        }
+      }
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      .modal-content {
+        background: #fff;
+        border-radius: 16px;
+        padding: 32px 24px 24px 24px;
+        min-width: 320px;
+        max-width: 95vw;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+        animation: fadeIn 0.3s;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 18px;
+        justify-content: flex-end;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      /* CSS aggiuntivo per feedback visivi */
+      .invalid-feedback {
+        color: #e53935;
+        font-size: 13px;
+        margin-top: 2px;
+        margin-bottom: 6px;
+        display: block;
+      }
+      input.ng-invalid.ng-touched,
+      select.ng-invalid.ng-touched {
+        border-color: #e53935;
+        background: #fff6f6;
+      }
+      .spinner-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+      }
+      .spinner {
+        border: 6px solid #eee;
+        border-top: 6px solid #667eea;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .selected-row {
+        background: #f3f7ff !important;
+        transition: background 0.3s;
+      }
+      .btn,
+      .btn-primary,
+      .btn-warning,
+      .btn-danger,
+      .btn-secondary {
+        transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+        outline: none;
+      }
+      .btn:focus,
+      .btn-primary:focus,
+      .btn-warning:focus,
+      .btn-danger:focus,
+      .btn-secondary:focus {
+        box-shadow: 0 0 0 3px #b3c6ff;
+        border-color: #667eea;
+      }
+      .btn:hover,
+      .btn-primary:hover,
+      .btn-warning:hover,
+      .btn-danger:hover,
+      .btn-secondary:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+      }
+      .request-card {
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+      .request-card:hover {
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.18);
+        transform: translateY(-2px) scale(1.03);
+      }
+      .categorie-section {
+        margin-top: 40px;
+      }
+      .category-form-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.08);
+        padding: 24px 20px 18px 20px;
+        margin-bottom: 24px;
+        max-width: 420px;
+      }
+      .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+      }
+      .category-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 1px 6px rgba(102, 126, 234, 0.07);
+        padding: 18px 16px 14px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 56px;
+      }
+      .category-label {
+        font-weight: 500;
+        font-size: 1.08em;
+        color: #333;
+      }
+      .category-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(102, 126, 234, 0.08);
+        overflow: hidden;
+        margin-top: 18px;
+      }
+      .modern-table th {
+        background: #f3f7ff;
+        font-weight: 600;
+        padding: 16px 10px;
+        border-bottom: 2px solid #e3e8f0;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      .modern-table td {
+        padding: 14px 10px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .modern-table tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+      .modern-table tr:last-child td {
+        border-bottom: none;
+      }
+      .table-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .section + .section {
+        margin-top: 40px;
+      }
     `,
   ],
 })
@@ -534,15 +1036,27 @@ export class DashboardComponent implements OnInit {
     motivazione: '',
   };
   richieste: RichiestaAcquisto[] = [];
+  showModaleModifica = false;
+  modificaRichiestaData: any = {
+    _id: '',
+    categoriaID: '',
+    oggetto: '',
+    quantita: 1,
+    costoUnitario: 0,
+    motivazione: '',
+  };
   // Responsabile
   richiesteDaApprovare: RichiestaAcquisto[] = [];
   categorie: CategoriaAcquisto[] = [];
   nuovaCategoria: string = '';
+  // 1. Spinner di loading
+  loading = false;
 
   constructor(
     private authService: AuthService,
     private richiestaService: RichiestaAcquistoService,
-    private categoriaService: CategoriaAcquistoService
+    private categoriaService: CategoriaAcquistoService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -569,9 +1083,12 @@ export class DashboardComponent implements OnInit {
       !this.nuovaRichiesta.costoUnitario ||
       !this.nuovaRichiesta.motivazione
     ) {
-      alert('Compila tutti i campi');
+      this.errorHandler.handleError({
+        error: { message: 'Compila tutti i campi' },
+      });
       return;
     }
+    this.loading = true;
     this.richiestaService.creaRichiesta(this.nuovaRichiesta).subscribe({
       next: () => {
         this.nuovaRichiesta = {
@@ -582,9 +1099,13 @@ export class DashboardComponent implements OnInit {
           motivazione: '',
         };
         this.loadRichiesteDipendente();
+        this.errorHandler.showSuccess('Richiesta creata con successo');
+        this.loading = false;
       },
-      error: (err) =>
-        alert(err.error?.message || 'Errore nella creazione richiesta'),
+      error: (err) => {
+        this.errorHandler.handleError(err);
+        this.loading = false;
+      },
     });
   }
 
@@ -621,11 +1142,61 @@ export class DashboardComponent implements OnInit {
     if (!id) return;
     if (confirm('Sei sicuro di voler eliminare questa richiesta?')) {
       this.richiestaService.eliminaRichiesta(id).subscribe({
-        next: () => this.loadRichiesteDipendente(),
-        error: (err) =>
-          alert(err.error?.message || 'Errore eliminazione richiesta'),
+        next: () => {
+          this.loadRichiesteDipendente();
+          this.errorHandler.showSuccess('Richiesta eliminata con successo');
+        },
+        error: (err) => this.errorHandler.handleError(err),
       });
     }
+  }
+
+  apriModaleModifica(r: RichiestaAcquisto) {
+    this.modificaRichiestaData = {
+      _id: r._id,
+      categoriaID:
+        typeof r.categoriaID === 'object' ? r.categoriaID._id : r.categoriaID,
+      oggetto: r.oggetto,
+      quantita: r.quantita,
+      costoUnitario: r.costoUnitario,
+      motivazione: r.motivazione,
+    };
+    this.showModaleModifica = true;
+  }
+  chiudiModaleModifica() {
+    this.showModaleModifica = false;
+    this.modificaRichiestaData = {
+      _id: '',
+      categoriaID: '',
+      oggetto: '',
+      quantita: 1,
+      costoUnitario: 0,
+      motivazione: '',
+    };
+  }
+  confermaModificaRichiesta() {
+    if (!this.modificaRichiestaData._id) return;
+    this.loading = true;
+    this.richiestaService
+      .aggiornaRichiesta(this.modificaRichiestaData._id, {
+        categoriaID: this.modificaRichiestaData.categoriaID,
+        oggetto: this.modificaRichiestaData.oggetto,
+        quantita: this.modificaRichiestaData.quantita,
+        costoUnitario: this.modificaRichiestaData.costoUnitario,
+        motivazione: this.modificaRichiestaData.motivazione,
+      })
+      .subscribe({
+        next: () => {
+          this.loadRichiesteDipendente();
+          this.chiudiModaleModifica();
+          this.errorHandler.showSuccess('Richiesta modificata con successo');
+          this.loading = false;
+        },
+        error: (err) => {
+          this.errorHandler.handleError(err);
+          this.loading = false;
+        },
+      });
   }
 
   // --- Responsabile ---
@@ -634,7 +1205,7 @@ export class DashboardComponent implements OnInit {
       next: (data) => {
         this.richiesteDaApprovare = data;
       },
-      error: (err) => console.error('Errore richieste da approvare:', err),
+      error: (err) => this.errorHandler.handleError(err),
     });
   }
 
@@ -642,9 +1213,11 @@ export class DashboardComponent implements OnInit {
     if (!id) return;
     if (confirm('Approvare questa richiesta?')) {
       this.richiestaService.approvaRichiesta(id).subscribe({
-        next: () => this.loadRichiesteDaApprovare(),
-        error: (err) =>
-          alert(err.error?.message || 'Errore approvazione richiesta'),
+        next: () => {
+          this.loadRichiesteDaApprovare();
+          this.errorHandler.showSuccess('Richiesta approvata con successo');
+        },
+        error: (err) => this.errorHandler.handleError(err),
       });
     }
   }
@@ -653,8 +1226,11 @@ export class DashboardComponent implements OnInit {
     if (!id) return;
     if (confirm('Rifiutare questa richiesta?')) {
       this.richiestaService.rifiutaRichiesta(id).subscribe({
-        next: () => this.loadRichiesteDaApprovare(),
-        error: (err) => alert(err.error?.message || 'Errore rifiuto richiesta'),
+        next: () => {
+          this.loadRichiesteDaApprovare();
+          this.errorHandler.showSuccess('Richiesta rifiutata');
+        },
+        error: (err) => this.errorHandler.handleError(err),
       });
     }
   }
@@ -677,9 +1253,9 @@ export class DashboardComponent implements OnInit {
         next: () => {
           this.nuovaCategoria = '';
           this.loadCategorie();
+          this.errorHandler.showSuccess('Categoria aggiunta con successo');
         },
-        error: (err) =>
-          alert(err.error?.message || 'Errore aggiunta categoria'),
+        error: (err) => this.errorHandler.handleError(err),
       });
   }
 
@@ -693,9 +1269,11 @@ export class DashboardComponent implements OnInit {
       this.categoriaService
         .aggiornaCategoria(cat._id, { descrizione: nuovaDescrizione })
         .subscribe({
-          next: () => this.loadCategorie(),
-          error: (err) =>
-            alert(err.error?.message || 'Errore modifica categoria'),
+          next: () => {
+            this.loadCategorie();
+            this.errorHandler.showSuccess('Categoria modificata con successo');
+          },
+          error: (err) => this.errorHandler.handleError(err),
         });
     }
   }
@@ -704,9 +1282,11 @@ export class DashboardComponent implements OnInit {
     if (!id) return;
     if (confirm('Eliminare questa categoria?')) {
       this.categoriaService.eliminaCategoria(id).subscribe({
-        next: () => this.loadCategorie(),
-        error: (err) =>
-          alert(err.error?.message || 'Errore eliminazione categoria'),
+        next: () => {
+          this.loadCategorie();
+          this.errorHandler.showSuccess('Categoria eliminata con successo');
+        },
+        error: (err) => this.errorHandler.handleError(err),
       });
     }
   }

@@ -14,6 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../../core/services/auth.service';
+import { ErrorHandlerService } from '../../../shared/services/error-handler.service';
 
 @Component({
   selector: 'app-register',
@@ -30,7 +31,15 @@ import { AuthService } from '../../../core/services/auth.service';
   ],
   template: `
     <div class="register-container">
-      <div class="register-card">
+      <div
+        *ngIf="loading"
+        class="spinner-overlay"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div class="spinner"></div>
+      </div>
+      <div class="register-card animate-fade-in" role="main">
         <div class="register-header">
           <div class="logo">
             <span class="logo-icon">🛒</span>
@@ -101,7 +110,8 @@ import { AuthService } from '../../../core/services/auth.service';
               mat-raised-button
               color="primary"
               type="submit"
-              [disabled]="registerForm.invalid"
+              [disabled]="registerForm.invalid || loading"
+              class="btn-register"
             >
               Registrati
             </button>
@@ -199,16 +209,63 @@ import { AuthService } from '../../../core/services/auth.service';
         text-decoration: underline;
       }
     `,
+    `
+      .spinner-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+      }
+      .spinner {
+        border: 6px solid #eee;
+        border-top: 6px solid #667eea;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.7s;
+      }
+      .btn-register {
+        transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+        outline: none;
+      }
+      .btn-register:focus {
+        box-shadow: 0 0 0 3px #b3c6ff;
+        border-color: #667eea;
+      }
+      .btn-register:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+      }
+    `,
   ],
 })
 export class RegisterComponent {
   registerForm: FormGroup;
+  loading = false;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private errorHandler: ErrorHandlerService
   ) {
     this.registerForm = this.fb.group({
       nome: ['', Validators.required],
@@ -221,21 +278,21 @@ export class RegisterComponent {
 
   onSubmit() {
     if (this.registerForm.valid) {
+      this.loading = true;
       const { nome, cognome, email, password, ruolo } = this.registerForm.value;
       this.authService
         .register({ nome, cognome, email, password, ruolo })
         .subscribe({
           next: (response) => {
+            this.errorHandler.showSuccess(
+              'Complimenti! Ti sei appena registrato.'
+            );
             this.router.navigate(['/dashboard']);
+            this.loading = false;
           },
           error: (error) => {
-            this.snackBar.open(
-              error.error.message || 'Registrazione fallita',
-              'Chiudi',
-              {
-                duration: 3000,
-              }
-            );
+            this.errorHandler.handleError(error);
+            this.loading = false;
           },
         });
     }
