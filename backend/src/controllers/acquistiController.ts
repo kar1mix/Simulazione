@@ -217,7 +217,8 @@ export const creaCategoria = async (req: Request, res: Response) => {
     await categoria.save();
     res.status(201).json(categoria);
   } catch (error) {
-    res.status(500).json({ message: "Errore interno del server" });
+    console.error("Errore durante la creazione categoria:", error);
+    res.status(500).json({ message: "Errore interno del server", error });
   }
 };
 

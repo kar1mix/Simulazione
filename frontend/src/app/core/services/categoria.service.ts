@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface CategoriaAcquisto {
   _id?: string;
@@ -9,7 +10,7 @@ export interface CategoriaAcquisto {
 
 @Injectable({ providedIn: 'root' })
 export class CategoriaAcquistoService {
-  private apiUrl = '/api/categorie';
+  private apiUrl = environment.apiUrl + '/categorie';
 
   constructor(private http: HttpClient) {}
 
