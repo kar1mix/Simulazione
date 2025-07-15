@@ -5,14 +5,20 @@ import { AuthService } from '../services/auth.service';
 export const roleGuard = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  const requiredRole = route.data['role'] as 'Dipendente' | 'Responsabile';
   const userRole = authService.getUserRole();
+
+  // Supporta sia 'role' (stringa) che 'roles' (array)
+  const requiredRole = route.data['role'] as string | undefined;
+  const requiredRoles = route.data['roles'] as string[] | undefined;
 
   if (!userRole) {
     return router.parseUrl('/login');
   }
 
-  if (userRole === requiredRole) {
+  if (
+    (requiredRole && userRole === requiredRole) ||
+    (requiredRoles && requiredRoles.includes(userRole))
+  ) {
     return true;
   }
 

@@ -17,6 +17,13 @@ export interface Statistiche {
   }[];
 }
 
+export interface StatisticaRichiesta {
+  mese: string;
+  categoria: string;
+  numeroRichieste: number;
+  costoTotale: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -31,5 +38,22 @@ export class StatisticheService {
       .set('al', params.al);
 
     return this.http.get<Statistiche>(this.apiUrl, { params: httpParams });
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class StatisticheRichiesteService {
+  private apiUrl = environment.apiUrl + '/statistiche/richieste';
+
+  constructor(private http: HttpClient) {}
+
+  getStatistiche(
+    mese?: string,
+    categoria?: string
+  ): Observable<StatisticaRichiesta[]> {
+    let params = new HttpParams();
+    if (mese) params = params.set('mese', mese);
+    if (categoria) params = params.set('categoria', categoria);
+    return this.http.get<StatisticaRichiesta[]>(this.apiUrl, { params });
   }
 }

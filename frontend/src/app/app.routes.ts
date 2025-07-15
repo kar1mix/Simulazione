@@ -13,5 +13,16 @@ export const routes: Routes = [
     component: DashboardComponent,
     canActivate: [authGuard],
   },
+  {
+    path: 'statistiche',
+    loadChildren: () =>
+      import('./features/statistiche/statistiche-module').then(
+        (m) => m.StatisticheModule
+      ),
+    canActivate: [
+      () => import('./core/guards/role.guard').then((m) => m.roleGuard),
+    ],
+    data: { roles: ['Responsabile'] },
+  },
   { path: '**', redirectTo: '/login' },
 ];

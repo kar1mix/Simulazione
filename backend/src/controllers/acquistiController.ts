@@ -423,6 +423,125 @@ export const rifiutaRichiesta = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/statistiche/richieste:
+ *   get:
+ *     summary: Statistiche richieste approvate aggregate per mese e categoria
+ *     tags: [Statistiche]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: mese
+ *         schema:
+ *           type: string
+ *           example: "2025-01"
+ *         description: Filtro opzionale per mese (YYYY-MM)
+ *       - in: query
+ *         name: categoria
+ *         schema:
+ *           type: string
+ *         description: Filtro opzionale per categoria (nome o id)
+ *     responses:
+ *       200:
+ *         description: Statistiche aggregate
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   mese:
+ *                     type: string
+ *                   categoria:
+ *                     type: string
+ *                   numeroRichieste:
+ *                     type: integer
+ *                   costoTotale:
+ *                     type: number
+ *       401:
+ *         description: Non autorizzato
+ *       403:
+ *         description: Solo i responsabili possono accedere
+ *       500:
+ *         description: Errore interno del server
+ */
+export const getStatisticheRichieste = async (req: Request, res: Response) => {
+  try {
+    if (req.user.ruolo !== "Responsabile") {
+      return res
+        .status(403)
+        .json({
+          message: "Solo i responsabili possono accedere alle statistiche",
+        });
+    }
+    const { mese, categoria } = req.query;
+    // Costruzione match dinamico
+    const match: any = { stato: "Approvata" };
+    if (mese) {
+      // Filtro per mese: dataRichiesta tra inizio e fine mese
+      const start = new Date(`${mese}-01T00:00:00.000Z`);
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + 1);
+      match.dataRichiesta = { $gte: start, $lt: end };
+    }
+    if (categoria) {
+      // Permetti sia id che nome categoria
+      if (categoria.match(/^[0-9a-fA-F]{24}$/)) {
+        match.categoriaID = categoria;
+      } else {
+        // Serve join con CategoriaAcquisto
+        const cats = await CategoriaAcquisto.find({ descrizione: categoria });
+        if (cats.length > 0) {
+          match.categoriaID = cats[0]._id;
+        } else {
+          return res.json([]);
+        }
+      }
+    }
+    // Aggregazione
+    const result = await RichiestaAcquisto.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: "categoriaacquistos",
+          localField: "categoriaID",
+          foreignField: "_id",
+          as: "categoriaObj",
+        },
+      },
+      { $unwind: "$categoriaObj" },
+      {
+        $group: {
+          _id: {
+            mese: {
+              $dateToString: { format: "%Y-%m", date: "$dataRichiesta" },
+            },
+            categoria: "$categoriaObj.descrizione",
+          },
+          numeroRichieste: { $sum: 1 },
+          costoTotale: { $sum: { $multiply: ["$quantita", "$costoUnitario"] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          mese: "$_id.mese",
+          categoria: "$_id.categoria",
+          numeroRichieste: 1,
+          costoTotale: { $round: ["$costoTotale", 2] },
+        },
+      },
+      { $sort: { mese: 1, categoria: 1 } },
+    ]);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: "Errore interno del server", error });
+  }
+};
+
 // --- CATEGORIE DI ACQUISTO ---
 
 /**

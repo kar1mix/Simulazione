@@ -168,3 +168,125 @@ select:focus {
   outline-offset: 2px;
   box-shadow: 0 0 0 3px #b3c6ff;
 }
+
+// Miglioramenti globali UI/UX
+input,
+select,
+textarea {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  background: #f9fafb;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px #b3c6ff44;
+  background: #fff;
+}
+button,
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 8px 8px 0;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.07);
+  transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+button:active,
+.btn:active {
+  transform: scale(0.97);
+}
+button:focus,
+.btn:focus {
+  box-shadow: 0 0 0 3px #b3c6ff;
+  border-color: #667eea;
+}
+button:hover,
+.btn:hover {
+  background: linear-gradient(90deg, #5a67d8 0%, #6b47b2 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.13);
+  transform: scale(1.04);
+}
+.card,
+.modern-table,
+.category-form-card,
+.statistiche-container,
+.request-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(102, 126, 234, 0.1);
+  background: #fff;
+  padding: 28px 22px 22px 22px;
+  margin-bottom: 32px;
+}
+.form-group {
+  margin-bottom: 22px;
+}
+.table-actions,
+.category-actions,
+.modal-actions,
+.statistiche-filters {
+  gap: 16px !important;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.animate-fade-in {
+  animation: fadeIn 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+// Ripple effect
+button::after,
+.btn::after {
+  content: "";
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  background: radial-gradient(circle, #b3c6ff55 10%, transparent 10.01%);
+  transition: opacity 0.4s;
+}
+button:active::after,
+.btn:active::after {
+  opacity: 1;
+  transition: 0s;
+}
+// Miglioramento spacing responsive
+@media (max-width: 700px) {
+  .card,
+  .modern-table,
+  .category-form-card,
+  .statistiche-container,
+  .request-card {
+    padding: 14px 4vw 14px 4vw;
+    margin-bottom: 18px;
+  }
+  .form-group {
+    margin-bottom: 14px;
+  }
+}

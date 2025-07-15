@@ -13,6 +13,7 @@ import {
   creaCategoria,
   aggiornaCategoria,
   eliminaCategoria,
+  getStatisticheRichieste,
 } from "../controllers/acquistiController";
 
 const router = express.Router();
@@ -32,5 +33,8 @@ router.get("/categorie", auth, getCategorie);
 router.post("/categorie", auth, creaCategoria);
 router.put("/categorie/:id", auth, aggiornaCategoria);
 router.delete("/categorie/:id", auth, eliminaCategoria);
+
+// Statistiche richieste approvate
+router.get("/statistiche/richieste", auth, getStatisticheRichieste);
 
 export default router;

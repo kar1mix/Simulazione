@@ -28,6 +28,15 @@ import { AuthService } from '../../../core/services/auth.service';
               <span class="nav-icon">📋</span>
               <span class="nav-text">Dashboard</span>
             </a>
+            <a
+              *ngIf="authService.getUserRole() === 'Responsabile'"
+              routerLink="/statistiche"
+              routerLinkActive="active"
+              class="nav-link"
+            >
+              <span class="nav-icon">📊</span>
+              <span class="nav-text">Statistiche</span>
+            </a>
             <button (click)="logout()" class="nav-button logout-btn">
               <span class="nav-icon">🚪</span>
               <span class="nav-text">Logout</span>
