@@ -156,7 +156,7 @@ export class EventiListaComponent implements OnInit, OnDestroy {
     public loadingService: LoadingService,
     private errorHandler: ErrorHandlerService
   ) {
-    this.isOrganizzatore = this.authService.getUserRole() === 'organizzatore';
+    this.isOrganizzatore = this.authService.getUserRole() === 'Responsabile';
   }
 
   ngOnInit() {

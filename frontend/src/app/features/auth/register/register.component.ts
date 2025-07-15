@@ -12,6 +12,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -25,14 +26,15 @@ import { AuthService } from '../../../core/services/auth.service';
     MatInputModule,
     MatButtonModule,
     MatSnackBarModule,
+    MatSelectModule,
   ],
   template: `
     <div class="register-container">
       <div class="register-card">
         <div class="register-header">
           <div class="logo">
-            <span class="logo-icon">🏓</span>
-            <h1>Torneo Ping-Pong</h1>
+            <span class="logo-icon">🛒</span>
+            <h1>Approvazione Richieste di Acquisto</h1>
           </div>
           <h2>Crea il tuo account</h2>
         </div>
@@ -81,6 +83,17 @@ import { AuthService } from '../../../core/services/auth.service';
               <mat-error
                 *ngIf="registerForm.get('password')?.hasError('minlength')"
                 >Password troppo corta (min 6 caratteri)</mat-error
+              >
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Ruolo</mat-label>
+              <mat-select formControlName="ruolo" required>
+                <mat-option value="Dipendente">Dipendente</mat-option>
+                <mat-option value="Responsabile">Responsabile</mat-option>
+              </mat-select>
+              <mat-error *ngIf="registerForm.get('ruolo')?.hasError('required')"
+                >Ruolo obbligatorio</mat-error
               >
             </mat-form-field>
 
@@ -202,26 +215,29 @@ export class RegisterComponent {
       cognome: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
+      ruolo: ['', Validators.required],
     });
   }
 
   onSubmit() {
     if (this.registerForm.valid) {
-      const { nome, cognome, email, password } = this.registerForm.value;
-      this.authService.register({ nome, cognome, email, password }).subscribe({
-        next: (response) => {
-          this.router.navigate(['/dashboard']);
-        },
-        error: (error) => {
-          this.snackBar.open(
-            error.error.message || 'Registrazione fallita',
-            'Chiudi',
-            {
-              duration: 3000,
-            }
-          );
-        },
-      });
+      const { nome, cognome, email, password, ruolo } = this.registerForm.value;
+      this.authService
+        .register({ nome, cognome, email, password, ruolo })
+        .subscribe({
+          next: (response) => {
+            this.router.navigate(['/dashboard']);
+          },
+          error: (error) => {
+            this.snackBar.open(
+              error.error.message || 'Registrazione fallita',
+              'Chiudi',
+              {
+                duration: 3000,
+              }
+            );
+          },
+        });
     }
   }
 

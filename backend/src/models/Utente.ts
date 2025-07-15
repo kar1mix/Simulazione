@@ -5,8 +5,7 @@ export interface IUtente extends Document {
   cognome: string;
   email: string;
   password: string;
-  iscrittoAlTorneo: boolean;
-  organizzatoreDelTorneo: boolean;
+  ruolo: "Dipendente" | "Responsabile";
 }
 
 const UtenteSchema = new Schema<IUtente>({
@@ -14,8 +13,7 @@ const UtenteSchema = new Schema<IUtente>({
   cognome: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  iscrittoAlTorneo: { type: Boolean, default: false },
-  organizzatoreDelTorneo: { type: Boolean, default: false },
+  ruolo: { type: String, enum: ["Dipendente", "Responsabile"], required: true },
 });
 
 export default mongoose.model<IUtente>("Utente", UtenteSchema);

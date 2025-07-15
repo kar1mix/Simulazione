@@ -6,16 +6,13 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-  ],
+  imports: [CommonModule, RouterModule],
   template: `
     <nav class="modern-navbar">
       <div class="navbar-container">
         <div class="navbar-brand">
-          <span class="brand-icon">🏓</span>
-          <span class="brand-text">Torneo Ping-Pong</span>
+          <span class="brand-icon">🛒</span>
+          <span class="brand-text">Approvazione Richieste di Acquisto</span>
         </div>
 
         <div class="navbar-menu">
@@ -25,7 +22,7 @@ import { AuthService } from '../../../core/services/auth.service';
               routerLinkActive="active"
               class="nav-link"
             >
-              <span class="nav-icon">📊</span>
+              <span class="nav-icon">📋</span>
               <span class="nav-text">Dashboard</span>
             </a>
             <button (click)="logout()" class="nav-button logout-btn">
@@ -90,7 +87,7 @@ import { AuthService } from '../../../core/services/auth.service';
       }
 
       .brand-text {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
         color: #fff;
         letter-spacing: 0.5px;
@@ -194,7 +191,7 @@ import { AuthService } from '../../../core/services/auth.service';
         }
 
         .brand-text {
-          font-size: 18px;
+          font-size: 16px;
         }
 
         .nav-text {

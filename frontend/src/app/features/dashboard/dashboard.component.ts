@@ -2,7 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService, User } from '../../core/services/auth.service';
-import { TournamentService } from '../../core/services/torneo.service';
+import {
+  RichiestaAcquistoService,
+  RichiestaAcquisto,
+  CategoriaAcquisto,
+} from '../../core/services/torneo.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,290 +22,219 @@ import { TournamentService } from '../../core/services/torneo.service';
           <div class="user-details">
             <h1>{{ currentUser?.nome }} {{ currentUser?.cognome }}</h1>
             <p class="user-email">{{ currentUser?.email }}</p>
-            <span class="role-badge">{{ getUserRoleDisplay() }}</span>
+            <span class="role-badge">{{ currentUser?.ruolo }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Sezione per utenti che non hanno ancora accesso -->
-      <div *ngIf="!canAccessApp()" class="access-section">
-        <h2>Accedi alle funzionalità del torneo</h2>
-        <div class="access-buttons">
-          <button
-            *ngIf="!isPartecipante()"
-            (click)="iscriviAlTorneo()"
-            class="btn btn-primary"
-          >
-            Iscriviti al Torneo
-          </button>
-          <button
-            *ngIf="!isOrganizzatore()"
-            (click)="diventaOrganizzatore()"
-            class="btn btn-secondary"
-          >
-            Diventa Organizzatore
-          </button>
-        </div>
-      </div>
-
-      <!-- Sezione per utenti con accesso -->
-      <div *ngIf="canAccessApp()" class="main-content">
-        <!-- Sezione per partecipanti che possono diventare organizzatori -->
-        <div
-          *ngIf="isPartecipante() && !isOrganizzatore()"
-          class="upgrade-section"
-        >
-          <h3>Vuoi diventare organizzatore?</h3>
-          <p>
-            Come partecipante, puoi anche diventare organizzatore per gestire
-            gli incontri.
-          </p>
-          <button (click)="diventaOrganizzatore()" class="btn btn-secondary">
-            Diventa Organizzatore
-          </button>
-        </div>
-
-        <!-- Sezione per organizzatori che possono diventare partecipanti -->
-        <div
-          *ngIf="isOrganizzatore() && !isPartecipante()"
-          class="upgrade-section"
-        >
-          <h3>Vuoi partecipare al torneo?</h3>
-          <p>
-            Come organizzatore, puoi anche iscriverti come partecipante per
-            giocare nel torneo.
-          </p>
-          <button (click)="iscriviAlTorneo()" class="btn btn-primary">
-            Iscriviti al Torneo
-          </button>
-        </div>
-
-        <!-- Sezione per utenti con ruolo "both" -->
-        <div
-          *ngIf="isOrganizzatore() && isPartecipante()"
-          class="upgrade-section"
-        >
-          <h3>Hai accesso completo!</h3>
-          <p>
-            Sei sia partecipante che organizzatore. Puoi giocare nel torneo e
-            gestire gli incontri.
-          </p>
-        </div>
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-          <button
-            [class.active]="activeTab === 'partecipanti'"
-            (click)="setActiveTab('partecipanti')"
-            class="tab-btn"
-          >
-            Partecipanti
-          </button>
-          <button
-            [class.active]="activeTab === 'incontri'"
-            (click)="setActiveTab('incontri')"
-            class="tab-btn"
-          >
-            Incontri
-          </button>
-          <button
-            [class.active]="activeTab === 'classifica'"
-            (click)="setActiveTab('classifica')"
-            class="tab-btn"
-          >
-            Classifica
-          </button>
-        </div>
-
-        <!-- Tab Content -->
-        <div class="tab-content">
-          <!-- Tab Partecipanti -->
-          <div *ngIf="activeTab === 'partecipanti'" class="tab-pane">
-            <h3>Partecipanti al Torneo</h3>
-            <div *ngIf="partecipanti.length === 0" class="no-data">
-              Nessun partecipante iscritto al torneo.
-            </div>
-            <div *ngIf="partecipanti.length > 0" class="partecipanti-list">
-              <div
-                *ngFor="let partecipante of partecipanti"
-                class="partecipante-item"
-              >
-                <span>{{ partecipante.nome }} {{ partecipante.cognome }}</span>
-                <span class="email">{{ partecipante.email }}</span>
-                <span
-                  *ngIf="partecipante.organizzatoreDelTorneo"
-                  class="badge organizer"
+      <div class="main-content">
+        <!-- Dipendente: Form nuova richiesta e lista richieste personali -->
+        <ng-container *ngIf="currentUser?.ruolo === 'Dipendente'">
+          <div class="section">
+            <h2>Nuova Richiesta di Acquisto</h2>
+            <form
+              (ngSubmit)="creaRichiesta()"
+              #richiestaForm="ngForm"
+              class="request-form"
+            >
+              <div class="form-group">
+                <label for="categoria">Categoria</label>
+                <select
+                  id="categoria"
+                  name="categoria"
+                  [(ngModel)]="nuovaRichiesta.categoriaID"
+                  required
+                  class="form-control"
                 >
-                  Organizzatore
-                </span>
+                  <option value="">Seleziona categoria</option>
+                  <option *ngFor="let cat of categorie" [value]="cat._id">
+                    {{ cat.descrizione }}
+                  </option>
+                </select>
               </div>
-            </div>
+              <div class="form-group">
+                <label for="oggetto">Oggetto</label>
+                <input
+                  id="oggetto"
+                  name="oggetto"
+                  [(ngModel)]="nuovaRichiesta.oggetto"
+                  required
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <label for="quantita">Quantità</label>
+                <input
+                  id="quantita"
+                  name="quantita"
+                  type="number"
+                  [(ngModel)]="nuovaRichiesta.quantita"
+                  required
+                  min="1"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <label for="costoUnitario">Costo Unitario</label>
+                <input
+                  id="costoUnitario"
+                  name="costoUnitario"
+                  type="number"
+                  [(ngModel)]="nuovaRichiesta.costoUnitario"
+                  required
+                  min="0"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-group">
+                <label for="motivazione">Motivazione</label>
+                <input
+                  id="motivazione"
+                  name="motivazione"
+                  [(ngModel)]="nuovaRichiesta.motivazione"
+                  required
+                  class="form-control"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Invia Richiesta
+              </button>
+            </form>
           </div>
+          <div class="section">
+            <h2>Le tue Richieste</h2>
+            <div *ngIf="richieste.length === 0" class="no-data">
+              Nessuna richiesta trovata.
+            </div>
+            <table *ngIf="richieste.length > 0" class="request-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Categoria</th>
+                  <th>Oggetto</th>
+                  <th>Quantità</th>
+                  <th>Costo Unitario</th>
+                  <th>Motivazione</th>
+                  <th>Stato</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of richieste">
+                  <td>{{ r.dataRichiesta | date : 'short' }}</td>
+                  <td>{{ r.categoriaID.descrizione }}</td>
+                  <td>{{ r.oggetto }}</td>
+                  <td>{{ r.quantita }}</td>
+                  <td>{{ r.costoUnitario | currency : 'EUR' }}</td>
+                  <td>{{ r.motivazione }}</td>
+                  <td>{{ r.stato }}</td>
+                  <td>
+                    <button
+                      *ngIf="r.stato === 'In attesa'"
+                      (click)="modificaRichiesta(r)"
+                      class="btn btn-sm btn-warning"
+                    >
+                      Modifica
+                    </button>
+                    <button
+                      *ngIf="r.stato === 'In attesa'"
+                      (click)="eliminaRichiesta(r._id)"
+                      class="btn btn-sm btn-danger"
+                    >
+                      Elimina
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
 
-          <!-- Tab Incontri -->
-          <div *ngIf="activeTab === 'incontri'" class="tab-pane">
-            <h3>Gestione Incontri</h3>
-
-            <!-- Form per creare nuovo incontro (solo organizzatori) -->
-            <div *ngIf="isOrganizzatore()" class="create-match-section">
-              <h4>Crea Nuovo Incontro</h4>
-              <form
-                (ngSubmit)="creaIncontro()"
-                #matchForm="ngForm"
-                class="match-form"
-              >
-                <div class="form-group">
-                  <label for="giocatore1">Giocatore 1:</label>
-                  <select
-                    id="giocatore1"
-                    name="giocatore1"
-                    [(ngModel)]="nuovoIncontro.giocatore1"
-                    required
-                    class="form-control"
-                  >
-                    <option value="">Seleziona giocatore</option>
-                    <option *ngFor="let p of partecipanti" [value]="p._id">
-                      {{ p.nome }} {{ p.cognome }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="giocatore2">Giocatore 2:</label>
-                  <select
-                    id="giocatore2"
-                    name="giocatore2"
-                    [(ngModel)]="nuovoIncontro.giocatore2"
-                    required
-                    class="form-control"
-                  >
-                    <option value="">Seleziona giocatore</option>
-                    <option *ngFor="let p of partecipanti" [value]="p._id">
-                      {{ p.nome }} {{ p.cognome }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="dataIncontro">Data Incontro:</label>
-                  <input
-                    type="datetime-local"
-                    id="dataIncontro"
-                    name="dataIncontro"
-                    [(ngModel)]="nuovoIncontro.dataIncontro"
-                    required
-                    class="form-control"
-                  />
-                </div>
-
-                <button type="submit" class="btn btn-primary">
-                  Crea Incontro
+        <!-- Responsabile: Elenco richieste da approvare e gestione categorie -->
+        <ng-container *ngIf="currentUser?.ruolo === 'Responsabile'">
+          <div class="section">
+            <h2>Richieste da Approvare</h2>
+            <div *ngIf="richiesteDaApprovare.length === 0" class="no-data">
+              Nessuna richiesta in attesa.
+            </div>
+            <table
+              *ngIf="richiesteDaApprovare.length > 0"
+              class="request-table"
+            >
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Categoria</th>
+                  <th>Oggetto</th>
+                  <th>Quantità</th>
+                  <th>Costo Unitario</th>
+                  <th>Motivazione</th>
+                  <th>Richiedente</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of richiesteDaApprovare">
+                  <td>{{ r.dataRichiesta | date : 'short' }}</td>
+                  <td>{{ r.categoriaID.descrizione }}</td>
+                  <td>{{ r.oggetto }}</td>
+                  <td>{{ r.quantita }}</td>
+                  <td>{{ r.costoUnitario | currency : 'EUR' }}</td>
+                  <td>{{ r.motivazione }}</td>
+                  <td>{{ r.utenteID }}</td>
+                  <td>
+                    <button
+                      (click)="approvaRichiesta(r._id)"
+                      class="btn btn-sm btn-success"
+                    >
+                      Approva
+                    </button>
+                    <button
+                      (click)="rifiutaRichiesta(r._id)"
+                      class="btn btn-sm btn-danger"
+                    >
+                      Rifiuta
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="section">
+            <h2>Gestione Categorie</h2>
+            <form
+              (ngSubmit)="aggiungiCategoria()"
+              #categoriaForm="ngForm"
+              class="category-form"
+            >
+              <input
+                [(ngModel)]="nuovaCategoria"
+                name="nuovaCategoria"
+                required
+                placeholder="Nuova categoria"
+                class="form-control"
+              />
+              <button type="submit" class="btn btn-primary">Aggiungi</button>
+            </form>
+            <ul class="category-list">
+              <li *ngFor="let cat of categorie">
+                {{ cat.descrizione }}
+                <button
+                  (click)="modificaCategoria(cat)"
+                  class="btn btn-sm btn-warning"
+                >
+                  Modifica
                 </button>
-              </form>
-            </div>
-
-            <!-- Lista incontri -->
-            <div class="incontri-list">
-              <h4>Incontri Programmati</h4>
-              <div *ngIf="incontri.length === 0" class="no-data">
-                Nessun incontro programmato.
-              </div>
-              <div *ngIf="incontri.length > 0" class="incontri-grid">
-                <div *ngFor="let incontro of incontri" class="incontro-card">
-                  <div class="incontro-header">
-                    <h5>
-                      {{ incontro.giocatore1.nome }}
-                      {{ incontro.giocatore1.cognome }} vs
-                      {{ incontro.giocatore2.nome }}
-                      {{ incontro.giocatore2.cognome }}
-                    </h5>
-                    <span class="status" [class]="incontro.stato">
-                      {{ incontro.stato }}
-                    </span>
-                  </div>
-                  <div class="incontro-details">
-                    <p>
-                      Data:
-                      {{ incontro.dataIncontro | date : 'dd/MM/yyyy HH:mm' }}
-                    </p>
-                    <p *ngIf="incontro.risultato">
-                      Risultato: {{ incontro.risultato.punteggioGiocatore1 }} -
-                      {{ incontro.risultato.punteggioGiocatore2 }}
-                    </p>
-                  </div>
-
-                  <!-- Azioni per organizzatori -->
-                  <div *ngIf="isOrganizzatore()" class="incontro-actions">
-                    <!-- Azioni per incontri programmati -->
-                    <div *ngIf="incontro.stato === 'programmato'">
-                      <button
-                        (click)="registraRisultato(incontro._id)"
-                        class="btn btn-sm btn-success"
-                      >
-                        Registra Risultato
-                      </button>
-                      <button
-                        (click)="eliminaIncontro(incontro._id)"
-                        class="btn btn-sm btn-danger"
-                      >
-                        Elimina
-                      </button>
-                    </div>
-
-                    <!-- Azioni per incontri completati -->
-                    <div *ngIf="incontro.stato === 'completato'">
-                      <button
-                        (click)="modificaRisultato(incontro._id)"
-                        class="btn btn-sm btn-warning"
-                      >
-                        Modifica Risultato
-                      </button>
-                      <button
-                        (click)="eliminaIncontro(incontro._id)"
-                        class="btn btn-sm btn-danger"
-                      >
-                        Elimina
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                <button
+                  (click)="eliminaCategoria(cat._id)"
+                  class="btn btn-sm btn-danger"
+                >
+                  Elimina
+                </button>
+              </li>
+            </ul>
           </div>
-
-          <!-- Tab Classifica -->
-          <div *ngIf="activeTab === 'classifica'" class="tab-pane">
-            <h3>Classifica del Torneo</h3>
-            <div *ngIf="classifica.length === 0" class="no-data">
-              Nessun dato disponibile per la classifica.
-            </div>
-            <div *ngIf="classifica.length > 0" class="classifica-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Posizione</th>
-                    <th>Giocatore</th>
-                    <th>Partite Giocate</th>
-                    <th>Vittorie</th>
-                    <th>Sconfitte</th>
-                    <th>Punti</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let pos of classifica; let i = index">
-                    <td>{{ i + 1 }}</td>
-                    <td>
-                      {{ pos.giocatore.nome }} {{ pos.giocatore.cognome }}
-                    </td>
-                    <td>{{ pos.partiteGiocate }}</td>
-                    <td>{{ pos.vittorie }}</td>
-                    <td>{{ pos.sconfitte }}</td>
-                    <td>{{ pos.punti }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        </ng-container>
       </div>
     </div>
   `,
@@ -638,276 +571,173 @@ import { TournamentService } from '../../core/services/torneo.service';
 })
 export class DashboardComponent implements OnInit {
   currentUser: User | null = null;
-  activeTab = 'partecipanti';
-  partecipanti: User[] = [];
-  incontri: any[] = [];
-  classifica: any[] = [];
-
-  nuovoIncontro = {
-    giocatore1: '',
-    giocatore2: '',
-    dataIncontro: '',
+  // Dipendente
+  nuovaRichiesta: any = {
+    categoriaID: '',
+    oggetto: '',
+    quantita: 1,
+    costoUnitario: 0,
+    motivazione: '',
   };
+  richieste: RichiestaAcquisto[] = [];
+  // Responsabile
+  richiesteDaApprovare: RichiestaAcquisto[] = [];
+  categorie: CategoriaAcquisto[] = [];
+  nuovaCategoria: string = '';
 
   constructor(
     private authService: AuthService,
-    private tournamentService: TournamentService
+    private richiestaService: RichiestaAcquistoService
   ) {}
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
     if (!this.currentUser) {
-      // Se non c'è un utente autenticato, reindirizza al login
       window.location.href = '/login';
       return;
     }
-    this.loadData();
-  }
-
-  loadData(): void {
-    this.loadPartecipanti();
-    this.loadIncontri();
-    this.loadClassifica();
-  }
-
-  loadPartecipanti(): void {
-    this.tournamentService.getPartecipanti().subscribe({
-      next: (data) => {
-        this.partecipanti = data;
-      },
-      error: (error) => {
-        console.error('Errore nel caricamento partecipanti:', error);
-      },
-    });
-  }
-
-  loadIncontri(): void {
-    this.tournamentService.getIncontri().subscribe({
-      next: (data) => {
-        this.incontri = data;
-      },
-      error: (error) => {
-        console.error('Errore nel caricamento incontri:', error);
-      },
-    });
-  }
-
-  loadClassifica(): void {
-    this.tournamentService.getClassifica().subscribe({
-      next: (data) => {
-        this.classifica = data;
-      },
-      error: (error) => {
-        console.error('Errore nel caricamento classifica:', error);
-      },
-    });
-  }
-
-  setActiveTab(tab: string): void {
-    this.activeTab = tab;
-  }
-
-  getUserRoleDisplay(): string {
-    const role = this.authService.getUserRole();
-    switch (role) {
-      case 'both':
-        return 'Partecipante e Organizzatore';
-      case 'organizzatore':
-        return 'Organizzatore';
-      case 'partecipante':
-        return 'Partecipante';
-      case 'utente':
-        return 'Utente';
-      default:
-        return 'Utente';
+    this.loadCategorie();
+    if (this.currentUser.ruolo === 'Dipendente') {
+      this.loadRichiesteDipendente();
+    } else if (this.currentUser.ruolo === 'Responsabile') {
+      this.loadRichiesteDaApprovare();
+      this.loadCategorie();
     }
   }
 
-  canAccessApp(): boolean {
-    return this.authService.canAccessApp();
-  }
-
-  isOrganizzatore(): boolean {
-    return this.authService.isOrganizzatore();
-  }
-
-  isPartecipante(): boolean {
-    return this.authService.isPartecipante();
-  }
-
-  iscriviAlTorneo(): void {
-    this.authService.iscrizioneTorneo().subscribe({
-      next: (response) => {
-        console.log('Iscrizione effettuata:', response);
-        // Ricarica il profilo utente dal server
-        this.authService.reloadUserProfile().subscribe({
-          next: (user) => {
-            this.currentUser = user;
-            this.loadData();
-          },
-          error: (error) => {
-            console.error('Errore nel ricaricamento profilo:', error);
-            this.currentUser = this.authService.getCurrentUser();
-            this.loadData();
-          },
-        });
-      },
-      error: (error) => {
-        console.error("Errore durante l'iscrizione:", error);
-      },
-    });
-  }
-
-  diventaOrganizzatore(): void {
-    this.authService.diventaOrganizzatore().subscribe({
-      next: (response) => {
-        console.log('Promosso a organizzatore:', response);
-        // Ricarica il profilo utente dal server
-        this.authService.reloadUserProfile().subscribe({
-          next: (user) => {
-            this.currentUser = user;
-            this.loadData();
-          },
-          error: (error) => {
-            console.error('Errore nel ricaricamento profilo:', error);
-            this.currentUser = this.authService.getCurrentUser();
-            this.loadData();
-          },
-        });
-      },
-      error: (error) => {
-        console.error('Errore durante la promozione:', error);
-      },
-    });
-  }
-
-  creaIncontro(): void {
-    console.log('Tentativo di creazione incontro:', this.nuovoIncontro);
-
+  // --- Dipendente ---
+  creaRichiesta() {
     if (
-      !this.nuovoIncontro.giocatore1 ||
-      !this.nuovoIncontro.giocatore2 ||
-      !this.nuovoIncontro.dataIncontro
+      !this.nuovaRichiesta.categoriaID ||
+      !this.nuovaRichiesta.oggetto ||
+      !this.nuovaRichiesta.quantita ||
+      !this.nuovaRichiesta.costoUnitario ||
+      !this.nuovaRichiesta.motivazione
     ) {
       alert('Compila tutti i campi');
       return;
     }
-
-    if (this.nuovoIncontro.giocatore1 === this.nuovoIncontro.giocatore2) {
-      alert('I giocatori devono essere diversi');
-      return;
-    }
-
-    console.log('Dati validi, invio richiesta...');
-    this.tournamentService.creaIncontro(this.nuovoIncontro).subscribe({
-      next: (response) => {
-        console.log('Incontro creato:', response);
-        alert('Incontro creato con successo!');
-        this.nuovoIncontro = {
-          giocatore1: '',
-          giocatore2: '',
-          dataIncontro: '',
+    this.richiestaService.creaRichiesta(this.nuovaRichiesta).subscribe({
+      next: () => {
+        this.nuovaRichiesta = {
+          categoriaID: '',
+          oggetto: '',
+          quantita: 1,
+          costoUnitario: 0,
+          motivazione: '',
         };
-        this.loadIncontri();
+        this.loadRichiesteDipendente();
       },
-      error: (error) => {
-        console.error('Errore nella creazione incontro:', error);
-        alert(error.error?.message || "Errore nella creazione dell'incontro");
-      },
+      error: (err) =>
+        alert(err.error?.message || 'Errore nella creazione richiesta'),
     });
   }
 
-  registraRisultato(incontroId: string): void {
-    const punteggio1 = prompt('Inserisci il punteggio del primo giocatore:');
-    const punteggio2 = prompt('Inserisci il punteggio del secondo giocatore:');
+  loadRichiesteDipendente() {
+    this.richiestaService.getRichieste().subscribe({
+      next: (data) => {
+        this.richieste = data;
+      },
+      error: (err) => console.error('Errore caricamento richieste:', err),
+    });
+  }
 
-    if (punteggio1 && punteggio2) {
-      const p1 = parseInt(punteggio1);
-      const p2 = parseInt(punteggio2);
+  modificaRichiesta(r: RichiestaAcquisto) {
+    const nuovoOggetto = prompt('Modifica oggetto:', r.oggetto);
+    if (nuovoOggetto !== null) {
+      this.richiestaService
+        .aggiornaRichiesta(r._id, { oggetto: nuovoOggetto })
+        .subscribe({
+          next: () => this.loadRichiesteDipendente(),
+          error: (err) =>
+            alert(err.error?.message || 'Errore modifica richiesta'),
+        });
+    }
+  }
 
-      if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0) {
-        alert('Inserisci punteggi validi (numeri >= 0)');
-        return;
-      }
-
-      this.tournamentService.registraRisultato(incontroId, p1, p2).subscribe({
-        next: (response) => {
-          console.log('Risultato registrato:', response);
-          this.loadIncontri();
-          this.loadClassifica();
-        },
-        error: (error) => {
-          console.error('Errore nella registrazione risultato:', error);
-          alert(
-            error.error?.message || 'Errore nella registrazione del risultato'
-          );
-        },
+  eliminaRichiesta(id: string) {
+    if (confirm('Sei sicuro di voler eliminare questa richiesta?')) {
+      this.richiestaService.eliminaRichiesta(id).subscribe({
+        next: () => this.loadRichiesteDipendente(),
+        error: (err) =>
+          alert(err.error?.message || 'Errore eliminazione richiesta'),
       });
     }
   }
 
-  eliminaIncontro(incontroId: string): void {
-    if (confirm('Sei sicuro di voler eliminare questo incontro?')) {
-      this.tournamentService.eliminaIncontro(incontroId).subscribe({
-        next: (response) => {
-          console.log('Incontro eliminato:', response);
-          this.loadIncontri();
-        },
-        error: (error) => {
-          console.error("Errore nell'eliminazione incontro:", error);
-        },
+  // --- Responsabile ---
+  loadRichiesteDaApprovare() {
+    this.richiestaService.getRichiesteDaApprovare().subscribe({
+      next: (data) => {
+        this.richiesteDaApprovare = data;
+      },
+      error: (err) => console.error('Errore richieste da approvare:', err),
+    });
+  }
+
+  approvaRichiesta(id: string) {
+    if (confirm('Approvare questa richiesta?')) {
+      this.richiestaService.approvaRichiesta(id).subscribe({
+        next: () => this.loadRichiesteDaApprovare(),
+        error: (err) =>
+          alert(err.error?.message || 'Errore approvazione richiesta'),
       });
     }
   }
 
-  modificaRisultato(incontroId: string): void {
-    const punteggio1 = prompt(
-      'Inserisci il nuovo punteggio del primo giocatore:'
+  rifiutaRichiesta(id: string) {
+    if (confirm('Rifiutare questa richiesta?')) {
+      this.richiestaService.rifiutaRichiesta(id).subscribe({
+        next: () => this.loadRichiesteDaApprovare(),
+        error: (err) => alert(err.error?.message || 'Errore rifiuto richiesta'),
+      });
+    }
+  }
+
+  // --- Categorie ---
+  loadCategorie() {
+    this.richiestaService.getCategorie().subscribe({
+      next: (data) => {
+        this.categorie = data;
+      },
+      error: (err) => console.error('Errore caricamento categorie:', err),
+    });
+  }
+
+  aggiungiCategoria() {
+    if (!this.nuovaCategoria) return;
+    this.richiestaService.creaCategoria(this.nuovaCategoria).subscribe({
+      next: () => {
+        this.nuovaCategoria = '';
+        this.loadCategorie();
+      },
+      error: (err) => alert(err.error?.message || 'Errore aggiunta categoria'),
+    });
+  }
+
+  modificaCategoria(cat: CategoriaAcquisto) {
+    const nuovaDescrizione = prompt(
+      'Modifica descrizione categoria:',
+      cat.descrizione
     );
-    const punteggio2 = prompt(
-      'Inserisci il nuovo punteggio del secondo giocatore:'
-    );
-
-    if (punteggio1 && punteggio2) {
-      const p1 = parseInt(punteggio1);
-      const p2 = parseInt(punteggio2);
-
-      if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0) {
-        alert('Inserisci punteggi validi (numeri positivi)');
-        return;
-      }
-
-      // Verifica regole ping-pong (vincitore deve avere almeno 11 punti e 2 punti di differenza)
-      const maxPunteggio = Math.max(p1, p2);
-      const minPunteggio = Math.min(p1, p2);
-
-      if (maxPunteggio < 11) {
-        alert('Il vincitore deve avere almeno 11 punti');
-        return;
-      }
-
-      if (maxPunteggio - minPunteggio < 2) {
-        alert('Il vincitore deve avere almeno 2 punti di differenza');
-        return;
-      }
-
-      this.tournamentService.registraRisultato(incontroId, p1, p2).subscribe({
-        next: (response) => {
-          console.log('Risultato modificato:', response);
-          alert('Risultato modificato con successo!');
-          this.loadIncontri();
-          this.loadClassifica(); // Ricarica anche la classifica
-        },
-        error: (error) => {
-          console.error('Errore nella modifica risultato:', error);
-          alert(error.error?.message || 'Errore nella modifica del risultato');
-        },
-      });
+    if (nuovaDescrizione !== null && nuovaDescrizione.trim() !== '') {
+      this.richiestaService
+        .aggiornaCategoria(cat._id, nuovaDescrizione)
+        .subscribe({
+          next: () => this.loadCategorie(),
+          error: (err) =>
+            alert(err.error?.message || 'Errore modifica categoria'),
+        });
     }
   }
 
-  logout(): void {
-    this.authService.logout();
-    window.location.href = '/login';
+  eliminaCategoria(id: string) {
+    if (confirm('Eliminare questa categoria?')) {
+      this.richiestaService.eliminaCategoria(id).subscribe({
+        next: () => this.loadCategorie(),
+        error: (err) =>
+          alert(err.error?.message || 'Errore eliminazione categoria'),
+      });
+    }
   }
 }

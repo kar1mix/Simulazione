@@ -1,34 +1,38 @@
 import express from "express";
-import {
-  iscrizioneTorneo,
-  promuoviOrganizzatore,
-} from "../controllers/utenteController";
-import {
-  creaIncontro,
-  getIncontri,
-  registraRisultato,
-  eliminaIncontro,
-  getClassifica,
-  getPartecipanti,
-} from "../controllers/incontroController";
 import { auth } from "../middlewares/auth";
+import {
+  getRichieste,
+  getRichiestaById,
+  creaRichiesta,
+  aggiornaRichiesta,
+  eliminaRichiesta,
+  getRichiesteDaApprovare,
+  approvaRichiesta,
+  rifiutaRichiesta,
+} from "../controllers/torneoController";
+import {
+  getCategorie,
+  creaCategoria,
+  aggiornaCategoria,
+  eliminaCategoria,
+} from "../controllers/incontroController";
 
 const router = express.Router();
 
-// Routes per utenti iscritti al torneo
-router.post("/iscrizione", auth, iscrizioneTorneo);
-router.post(
-  "/promuovi-organizzatore/:userId",
-  auth,
-  promuoviOrganizzatore
-);
-router.get("/partecipanti", auth, getPartecipanti);
-router.get("/incontri", auth, getIncontri);
-router.get("/classifica", auth, getClassifica);
+// Richieste di acquisto
+router.get("/richieste", auth, getRichieste);
+router.get("/richieste/da-approvare", auth, getRichiesteDaApprovare);
+router.get("/richieste/:id", auth, getRichiestaById);
+router.post("/richieste", auth, creaRichiesta);
+router.put("/richieste/:id", auth, aggiornaRichiesta);
+router.delete("/richieste/:id", auth, eliminaRichiesta);
+router.put("/richieste/:id/approva", auth, approvaRichiesta);
+router.put("/richieste/:id/rifiuta", auth, rifiutaRichiesta);
 
-// Routes per organizzatori
-router.post("/incontri", auth, creaIncontro);
-router.put("/incontri/:id/risultato", auth, registraRisultato);
-router.delete("/incontri/:id", auth, eliminaIncontro);
+// Categorie di acquisto
+router.get("/categorie", auth, getCategorie);
+router.post("/categorie", auth, creaCategoria);
+router.put("/categorie/:id", auth, aggiornaCategoria);
+router.delete("/categorie/:id", auth, eliminaCategoria);
 
 export default router;

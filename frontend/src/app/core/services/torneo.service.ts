@@ -3,90 +3,112 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-export interface Partecipante {
+export interface CategoriaAcquisto {
   _id: string;
-  nome: string;
-  cognome: string;
-  email: string;
-  iscrittoAlTorneo: boolean;
-  organizzatoreDelTorneo: boolean;
+  descrizione: string;
 }
 
-export interface Incontro {
+export interface RichiestaAcquisto {
   _id: string;
-  giocatore1: Partecipante;
-  giocatore2: Partecipante;
-  dataIncontro: string;
-  stato: 'programmato' | 'completato';
-  risultato?: {
-    punteggioGiocatore1: number;
-    punteggioGiocatore2: number;
-  };
+  dataRichiesta: string;
+  categoriaID: CategoriaAcquisto;
+  oggetto: string;
+  quantita: number;
+  costoUnitario: number;
+  motivazione: string;
+  stato: 'In attesa' | 'Approvata' | 'Rifiutata';
+  utenteID: string;
+  dataApprovazione?: string;
+  utenteApprovazioneID?: string;
 }
 
-export interface ClassificaItem {
-  giocatore: Partecipante;
-  partiteGiocate: number;
-  vittorie: number;
-  sconfitte: number;
-  punti: number;
-}
-
-export interface NuovoIncontro {
-  giocatore1: string;
-  giocatore2: string;
-  dataIncontro: string;
+export interface NuovaRichiesta {
+  categoriaID: string;
+  oggetto: string;
+  quantita: number;
+  costoUnitario: number;
+  motivazione: string;
 }
 
 @Injectable({
   providedIn: 'root',
 })
-export class TournamentService {
-  private apiUrl = `${environment.apiUrl}/torneo`;
+export class RichiestaAcquistoService {
+  private apiUrl = `${environment.apiUrl}`;
 
   constructor(private http: HttpClient) {}
 
-  // Funzioni per ottenere dati
-  getPartecipanti(): Observable<Partecipante[]> {
-    return this.http.get<Partecipante[]>(`${this.apiUrl}/partecipanti`);
+  // Richieste di acquisto
+  getRichieste(): Observable<RichiestaAcquisto[]> {
+    return this.http.get<RichiestaAcquisto[]>(`${this.apiUrl}/richieste`);
   }
 
-  getIncontri(): Observable<Incontro[]> {
-    return this.http.get<Incontro[]>(`${this.apiUrl}/incontri`);
+  getRichiestaById(id: string): Observable<RichiestaAcquisto> {
+    return this.http.get<RichiestaAcquisto>(`${this.apiUrl}/richieste/${id}`);
   }
 
-  getClassifica(): Observable<ClassificaItem[]> {
-    return this.http.get<ClassificaItem[]>(`${this.apiUrl}/classifica`);
-  }
-
-  // Funzioni organizzatore
-  creaIncontro(incontro: NuovoIncontro): Observable<Incontro> {
-    return this.http.post<Incontro>(`${this.apiUrl}/incontri`, incontro);
-  }
-
-  registraRisultato(
-    incontroId: string,
-    punteggioGiocatore1: number,
-    punteggioGiocatore2: number
-  ): Observable<Incontro> {
-    return this.http.put<Incontro>(
-      `${this.apiUrl}/incontri/${incontroId}/risultato`,
-      {
-        punteggioGiocatore1,
-        punteggioGiocatore2,
-      }
+  creaRichiesta(richiesta: NuovaRichiesta): Observable<RichiestaAcquisto> {
+    return this.http.post<RichiestaAcquisto>(
+      `${this.apiUrl}/richieste`,
+      richiesta
     );
   }
 
-  eliminaIncontro(incontroId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/incontri/${incontroId}`);
+  aggiornaRichiesta(
+    id: string,
+    richiesta: Partial<NuovaRichiesta>
+  ): Observable<RichiestaAcquisto> {
+    return this.http.put<RichiestaAcquisto>(
+      `${this.apiUrl}/richieste/${id}`,
+      richiesta
+    );
   }
 
-  // Metodo per promuovere un utente a organizzatore (solo per organizzatori esistenti)
-  promuoviOrganizzatore(userId: string): Observable<any> {
-    return this.http.post(
-      `${environment.apiUrl}/utenti/promuovi-organizzatore/${userId}`,
+  eliminaRichiesta(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/richieste/${id}`);
+  }
+
+  getRichiesteDaApprovare(): Observable<RichiestaAcquisto[]> {
+    return this.http.get<RichiestaAcquisto[]>(
+      `${this.apiUrl}/richieste/da-approvare`
+    );
+  }
+
+  approvaRichiesta(id: string): Observable<RichiestaAcquisto> {
+    return this.http.put<RichiestaAcquisto>(
+      `${this.apiUrl}/richieste/${id}/approva`,
       {}
     );
+  }
+
+  rifiutaRichiesta(id: string): Observable<RichiestaAcquisto> {
+    return this.http.put<RichiestaAcquisto>(
+      `${this.apiUrl}/richieste/${id}/rifiuta`,
+      {}
+    );
+  }
+
+  // Categorie
+  getCategorie(): Observable<CategoriaAcquisto[]> {
+    return this.http.get<CategoriaAcquisto[]>(`${this.apiUrl}/categorie`);
+  }
+
+  creaCategoria(descrizione: string): Observable<CategoriaAcquisto> {
+    return this.http.post<CategoriaAcquisto>(`${this.apiUrl}/categorie`, {
+      descrizione,
+    });
+  }
+
+  aggiornaCategoria(
+    id: string,
+    descrizione: string
+  ): Observable<CategoriaAcquisto> {
+    return this.http.put<CategoriaAcquisto>(`${this.apiUrl}/categorie/${id}`, {
+      descrizione,
+    });
+  }
+
+  eliminaCategoria(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/categorie/${id}`);
   }
 }

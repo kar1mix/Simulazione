@@ -8,8 +8,7 @@ export interface User {
   nome: string;
   cognome: string;
   email: string;
-  iscrittoAlTorneo: boolean;
-  organizzatoreDelTorneo: boolean;
+  ruolo: 'Dipendente' | 'Responsabile';
 }
 
 export interface LoginRequest {
@@ -22,6 +21,7 @@ export interface RegisterRequest {
   cognome: string;
   email: string;
   password: string;
+  ruolo?: 'Dipendente' | 'Responsabile';
 }
 
 export interface AuthResponse {
@@ -45,7 +45,6 @@ export class AuthService {
   private loadStoredUser(): void {
     const token = localStorage.getItem(this.tokenKey);
     if (token) {
-      // Decodifica il token per ottenere le informazioni dell'utente
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const user: User = {
@@ -53,8 +52,7 @@ export class AuthService {
           nome: payload.nome || '',
           cognome: payload.cognome || '',
           email: payload.email,
-          iscrittoAlTorneo: payload.iscrittoAlTorneo || false,
-          organizzatoreDelTorneo: payload.organizzatoreDelTorneo || false,
+          ruolo: payload.ruolo as 'Dipendente' | 'Responsabile',
         };
         this.currentUserSubject.next(user);
       } catch (error) {
@@ -99,34 +97,9 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  getUserRole(): string {
+  getUserRole(): 'Dipendente' | 'Responsabile' | '' {
     const user = this.getCurrentUser();
-    if (!user) return '';
-
-    if (user.organizzatoreDelTorneo && user.iscrittoAlTorneo) {
-      return 'both';
-    } else if (user.organizzatoreDelTorneo) {
-      return 'organizzatore';
-    } else if (user.iscrittoAlTorneo) {
-      return 'partecipante';
-    } else {
-      return 'utente';
-    }
-  }
-
-  isOrganizzatore(): boolean {
-    const user = this.getCurrentUser();
-    return user?.organizzatoreDelTorneo || false;
-  }
-
-  isPartecipante(): boolean {
-    const user = this.getCurrentUser();
-    return user?.iscrittoAlTorneo || false;
-  }
-
-  canAccessApp(): boolean {
-    const user = this.getCurrentUser();
-    return user?.iscrittoAlTorneo || user?.organizzatoreDelTorneo || false;
+    return user?.ruolo || '';
   }
 
   // Metodo per ricaricare i dati dell'utente dal server
@@ -136,33 +109,5 @@ export class AuthService {
         this.currentUserSubject.next(user);
       })
     );
-  }
-
-  iscrizioneTorneo(): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/utenti/iscrizione`, {}).pipe(
-      tap((response: any) => {
-        // Aggiorna il token se fornito nella risposta
-        if (response.token) {
-          localStorage.setItem(this.tokenKey, response.token);
-          // Ricarica i dati utente dal nuovo token
-          this.loadStoredUser();
-        }
-      })
-    );
-  }
-
-  diventaOrganizzatore(): Observable<any> {
-    return this.http
-      .post(`${environment.apiUrl}/utenti/diventa-organizzatore`, {})
-      .pipe(
-        tap((response: any) => {
-          // Aggiorna il token se fornito nella risposta
-          if (response.token) {
-            localStorage.setItem(this.tokenKey, response.token);
-            // Ricarica i dati utente dal nuovo token
-            this.loadStoredUser();
-          }
-        })
-      );
   }
 }
